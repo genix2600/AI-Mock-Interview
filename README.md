@@ -17,29 +17,28 @@ Our platform solves this by enabling:
 This prototype demonstrates the **core logic, architecture, and workflow** required for the full-scale solution.
 
 ## Features Implemented in Round 2 (60–80% Prototype Build)
-### ✔ Core AI Functionality
+### Core AI Functionality
 - Whisper-based audio transcription (local/API)
 - LLM-powered question generation (GPT/Llama)
 - Rule-based + model-assisted evaluation engine
 - JSON-based structured feedback
 
-### ✔ Backend (FastAPI)
+### Backend (FastAPI)
 - `/transcribe` — Converts audio → text  
 - `/ask` — Generates next question  
 - `/evaluate` — Returns scores + feedback  
 
-### ✔ Frontend (React)
+### Frontend (React)
 - Audio recording interface  
 - Role selection UI  
 - API integration with backend  
 - Display of feedback + questions  
 
-### ✔ Database (Firebase)
+### Database (Firebase)
 - Stores transcripts  
 - Stores user interview sessions  
 - Stores feedback reports  
 
----
-
 ## System Architecture
+
 The system uses a lightweight **microservice-style architecture**:
