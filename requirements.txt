@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 fastapi==0.110.0
 uvicorn==0.30.0
 pydantic==2.6.3
@@ -11,3 +12,18 @@ numpy==2.0.0
 openai==1.14.0
 
 firebase-admin==6.2.0
+=======
+fastapi==0.110.0
+uvicorn==0.30.0
+pydantic==2.6.3
+python-multipart==0.0.9
+
+torch==2.2.1
+openai-whisper==20231117
+tiktoken==0.6.0
+numpy==2.0.0
+
+openai==1.14.0
+
+firebase-admin==6.2.0
+>>>>>>> eb92efe637e016fa4c87c2a7ebd7d836950fcf8b
