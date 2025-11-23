@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # AI Mock Interview Platform  
 A real-time AI-powered mock interview system designed for the **UpSkill India Challenge (Techfest IIT Bombay – Round 2)**.  
 The platform conducts voice-based interviews, generates domain-specific questions, evaluates responses using NLP, and provides personalized feedback for career readiness.
@@ -85,8 +84,3 @@ This prototype demonstrates the **core logic, architecture, and workflow** requi
 - Stores transcripts  
 - Stores user interview sessions  
 - Stores feedback reports  
-
-## System Architecture
-
-The system uses a lightweight **microservice-style architecture**:
->>>>>>> eb92efe637e016fa4c87c2a7ebd7d836950fcf8b
