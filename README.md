@@ -1,86 +1,46 @@
 # AI Mock Interview Platform  
-A real-time AI-powered mock interview system designed for the **UpSkill India Challenge (Techfest IIT Bombay – Round 2)**.  
-The platform conducts voice-based interviews, generates domain-specific questions, evaluates responses using NLP, and provides personalized feedback for career readiness.
+A real-time, voice enabled AI system designed for the **UpSkill India Challenge (Techfest IIT Bombay)**. The platform simulates a progessional technical interview environment, generating dynamic questions and providing structured, objective feedback for career readiness.
 
 ## Project Overview
-Preparing for interviews is difficult due to limited practice opportunities and inconsistent feedback.  
-Our platform solves this by enabling:
+Traditional mock interviews suffer from inconsistency and lack of personalized, objective metrics. Our platform addresses this by leveraging Large Language Models (LLMs) and Speech-to-Text (STT) to deliver a scalable, fully automated interview experience.
 
-- **Real-time voice interviews**
-- **Automatic speech-to-text transcription (Whisper)**
-- **Role-specific interview modes** (Data Analyst, ML Engineer, Cybersecurity, etc.)
-- **AI-generated follow-up questions**
-- **Automated scoring** (technical, communication, confidence)
-- **Personalized improvement plan**
-- **Firebase-backed storage for session data**
 
-This prototype demonstrates the **core logic, architecture, and workflow** required for the full-scale solution.
+- **Real-time Voice Interaction: User speaks their answers; the system transcribes and responds with the next question.**
 
-## Features Implemented in Round 2 (60–80% Prototype Build)
-### ✔ Core AI Functionality
-- Whisper-based audio transcription (local/API)
-- LLM-powered question generation (GPT/Llama)
+- **Domain Specificity: Supports multiple role tracks (e.g., Data Analyst, ML Engineer, Cybersecurity).**
+
+- **Contextual Interview Flow: LLM dynamically generates follow-up questions based on the user's previous answers, simulating a human interviewer.**
+
+- **Structured Evaluation: Provides granular scoring on Technical Correctness, Communication Clarity, and Fluency.**
+
+
+##
+
+### Core AI Functionality
+- Whisper-based audio transcription (API)
+- LLM-powered question generation (GPT/Gemini)
 - Rule-based + model-assisted evaluation engine
-- JSON-based structured feedback
+- Database Integration: Firebase Admin SDK
 
-### ✔ Backend (FastAPI)
-- `/transcribe` — Converts audio → text  
-- `/ask` — Generates next question  
-- `/evaluate` — Returns scores + feedback  
-
-### ✔ Frontend (React)
-- Audio recording interface  
-- Role selection UI  
-- API integration with backend  
-- Display of feedback + questions  
-
-### ✔ Database (Firebase)
-- Stores transcripts  
-- Stores user interview sessions  
-- Stores feedback reports  
-
+### API Endpoints
+- `/health` - GET - API Health Check
+- `/interview/transcribe` - POST - Converts user audio to text transcript
+- `/interview/generate_question` - POST - Generates the next dynamic question
+- `/interview/evaluate` - POST - Generates final structured score and feedback
 ---
 
 ## System Architecture
-The system uses a lightweight **microservice-style architecture**:
+The system uses a lightweight **microservice-style architecture** centered around a Python backend managing the AI orchestration and state.
+
+### Backend - FastAPI (Python)
+### Frontend - React (TypeScript)
+### LLM - OpenAI/Gemini APIs
+### Database - Firebase
+
+
 =======
-# AI Mock Interview Platform  
-A real-time AI-powered mock interview system designed for the **UpSkill India Challenge (Techfest IIT Bombay – Round 2)**.  
-The platform conducts voice-based interviews, generates domain-specific questions, evaluates responses using NLP, and provides personalized feedback for career readiness.
-
-## Project Overview
-Preparing for interviews is difficult due to limited practice opportunities and inconsistent feedback.  
-Our platform solves this by enabling:
-
-- **Real-time voice interviews**
-- **Automatic speech-to-text transcription (Whisper)**
-- **Role-specific interview modes** (Data Analyst, ML Engineer, Cybersecurity, etc.)
-- **AI-generated follow-up questions**
-- **Automated scoring** (technical, communication, confidence)
-- **Personalized improvement plan**
-- **Firebase-backed storage for session data**
-
-This prototype demonstrates the **core logic, architecture, and workflow** required for the full-scale solution.
-
-## Features Implemented in Round 2 (60–80% Prototype Build)
-### Core AI Functionality
-- Whisper-based audio transcription (local/API)
-- LLM-powered question generation (GPT/Llama)
-- Rule-based + model-assisted evaluation engine
-- JSON-based structured feedback
-
-### Backend (FastAPI)
-- `/transcribe` — Converts audio → text  
-- `/ask` — Generates next question  
-- `/evaluate` — Returns scores + feedback  
-
-### Frontend (React)
-- Audio recording interface  
-- Role selection UI  
-- API integration with backend  
-- Display of feedback + questions  
-
-### Database (Firebase)
-- Stores transcripts  
-- Stores user interview sessions  
-- Stores feedback reports  
+## Team
+- `Aaryaman Vaidya` - Team Lead
+- `Abhav Jain` - Backend/Frontend Developer
+- `Annem Saad` - AI Research / Testing
+- `Ritam Sarkar` - Documentation
