@@ -1,53 +1,38 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from pydantic import BaseModel
-from typing import Optional, Dict, Any
-import uuid
-import aiofiles
-import os
-from . import whisper_test, llm, evaluation
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from src.routers import interview 
 
-app = FastAPI(title="Mock Interview Backend - Week1 scaffold")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Initialize services (Firebase, LLM clients, etc.) here
+    print("Application Startup: Initializing services...")
+    # TODO: Add Firebase initialization here
+    yield
+    # Shutdown: Clean up resources here
+    print("Application Shutdown: Cleaning up resources...")
 
-class GenerateRequest(BaseModel):
-    role: str
-    difficulty: Optional[str] = "medium"
+app = FastAPI(
+    title="AI Mock Interview Platform API",
+    version="0.1.0",
+    lifespan=lifespan
+)
 
-class EvaluateRequest(BaseModel):
-    transcript: str
-    role: Optional[str] = "data_analyst"
-    question_id: Optional[str] = None
-    audio_features: Optional[Dict[str, Any]] = None
+# --- Include Routers ---
+#Include all the endpoints from the router file
+app.include_router(interview.router)
 
-@app.get("/health")
+# --- Health Check Endpoint ---
+# We keep the health check here or move it to the router (Keeping it simple for now)
+@app.get("/health", tags=["Health"])
 async def health():
-    return {"status": "ok"}
+    """API Health Check."""
+    return {"status": "ok", "service": "AI Mock Interview Backend"}
 
-@app.post("/transcribe")
-async def transcribe_audio(file: UploadFile = File(...)):
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="No file uploaded")
-    tmp_dir = "/tmp/mock_interview"
-    os.makedirs(tmp_dir, exist_ok=True)
-    tmp_name = os.path.join(tmp_dir, f"{uuid.uuid4().hex}_{file.filename}")
-    async with aiofiles.open(tmp_name, "wb") as out:
-        content = await file.read()
-        await out.write(content)
-    
-    transcript = whisper_test.transcribe_file(tmp_name)
-    return {"transcript": transcript, "audio_path": tmp_name}
+# NOTE: All in-line Pydantic models (GenerateRequest, EvaluateRequest) and 
+# all dedicated endpoint functions (transcribe_audio, generate_question, evaluate) 
+# have been successfully moved to src/models.py and src/routers/interview.py.
 
-@app.post("/generate_question")
-async def generate_question(req: GenerateRequest):
-    
-    q = llm.generate_question_stub(role=req.role, difficulty=req.difficulty)
-    return {"question": q}
-
-@app.post("/evaluate")
-async def evaluate(req: EvaluateRequest):
-    semantic = llm.semantic_evaluate_stub(req.transcript, req.role, req.question_id)
-    eval_json = evaluation.combine_scores(semantic, req.audio_features or {})
-    return {"evaluation": eval_json}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=True)
+#Remove the __main__ block as uvicorn should be run externally
+# if __name__ == "__main__":
+#     import uvicorn
+#     uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=True)
