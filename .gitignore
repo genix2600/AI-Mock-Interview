@@ -205,3 +205,17 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# --- Project Specific Additions for AI-Mock-Interview ---
+
+# 1. Recursive Pycache fix (Ensures the fix holds true for src/__pycache__)
+**/__pycache__/
+
+# 2. Frontend Dependencies (Crucial for Annem's work)
+frontend/node_modules/
+
+# 3. Local Editor Files (If you're using VS Code and haven't uncommented the template section)
+.vscode/
+
+# 4. macOS Files (If any team member uses a Mac)
+.DS_Store

@@ -3,9 +3,9 @@ uvicorn
 aiofiles
 python-multipart
 pydantic
-openai-whisper
-torch
-torchaudio
+#openai-whisper
+#torch
+#torchaudio
 openai
 httpx
 anthropic
