@@ -219,3 +219,6 @@ frontend/node_modules/
 
 # 4. macOS Files (If any team member uses a Mac)
 .DS_Store
+
+# Firebase Service Account Credentials
+firebase_creds.json

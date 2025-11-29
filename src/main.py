@@ -1,14 +1,28 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from src.routers import interview 
+from src.database import initialize_firebase 
+from dotenv import load_dotenv
+import os
 
+load_dotenv() 
+
+# --- Application Lifespan Context ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Initialize services (Firebase, LLM clients, etc.) here
+    """
+    Handles startup and shutdown events for the application, initializing services.
+    """
     print("Application Startup: Initializing services...")
-    # TODO: Add Firebase initialization here
-    yield
-    # Shutdown: Clean up resources here
+    
+    # Initialize Firebase using the environment variable path
+    if os.getenv('FIREBASE_SERVICE_ACCOUNT_PATH'):
+        initialize_firebase()
+    else:
+        print("WARNING: Skipping Firebase initialization (FIREBASE_SERVICE_ACCOUNT_PATH not set).")
+    
+    yield # Application serves requests here
+    
     print("Application Shutdown: Cleaning up resources...")
 
 app = FastAPI(
@@ -17,22 +31,12 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# --- Include Routers ---
-#Include all the endpoints from the router file
 app.include_router(interview.router)
 
 # --- Health Check Endpoint ---
-# We keep the health check here or move it to the router (Keeping it simple for now)
 @app.get("/health", tags=["Health"])
 async def health():
     """API Health Check."""
     return {"status": "ok", "service": "AI Mock Interview Backend"}
 
-# NOTE: All in-line Pydantic models (GenerateRequest, EvaluateRequest) and 
-# all dedicated endpoint functions (transcribe_audio, generate_question, evaluate) 
-# have been successfully moved to src/models.py and src/routers/interview.py.
-
-#Remove the __main__ block as uvicorn should be run externally
-# if __name__ == "__main__":
-#     import uvicorn
-#     uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=True)
+# NOTE: The execution is handled by 'uvicorn src.main:app --reload'
