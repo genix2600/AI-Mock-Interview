@@ -8,6 +8,3 @@ def transcribe_file(path: str) -> str:
             return f.read().strip()
     except Exception:
         return "This is a placeholder transcript. We need to replace with Whisper output."
-
-
-# For testing purposes
