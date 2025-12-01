@@ -13,19 +13,15 @@ def initialize_firebase():
     global DB
     
     if DB is not None:
-        return # Already initialized
+        return
 
     if not SERVICE_ACCOUNT_PATH or not os.path.exists(SERVICE_ACCOUNT_PATH):
-        # Fail gracefully if the file isn't found
         print("WARNING: Firebase service account path not found or file does not exist. DB manager is disabled.")
         return
 
     try:
         cred = credentials.Certificate(SERVICE_ACCOUNT_PATH)
-        
         initialize_app(cred)
-        
-        
         DB = firestore.client()
         print("Firebase Firestore initialized successfully.")
     except Exception as e:
@@ -36,7 +32,7 @@ class SessionManager:
     """Manages CRUD operations for interview sessions in Firestore."""
     
     def __init__(self):
-        
+
         if DB is None:
             raise ConnectionError("Firestore client not initialized. Check firebase_creds.json path and content.")
         self.db = DB
@@ -78,5 +74,13 @@ class SessionManager:
             'completed_at': firestore.SERVER_TIMESTAMP
         })
 
+#DB_MANAGER = SessionManager()
 
-DB_MANAGER = SessionManager()
+GLOBAL_DB_MANAGER = None
+
+def get_db_manager() -> 'SessionManager':
+    """Returns the single, initialized SessionManager instance."""
+    global GLOBAL_DB_MANAGER
+    if GLOBAL_DB_MANAGER is None:
+        GLOBAL_DB_MANAGER = SessionManager()
+    return GLOBAL_DB_MANAGER

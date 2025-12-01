@@ -1,15 +1,14 @@
-# src/routers/interview.py
 from fastapi import APIRouter, UploadFile, File, HTTPException
 import uuid
 import aiofiles
 import os
-import time # For dummy file reading simulation
 
-# Import the stubs and models (Ensure these paths are correct in your structure)
+from ..database import get_db_manager 
+
+# Import the stubs and models
 from .. import whisper_test, llm, evaluation
 from ..models import InterviewRequest, InterviewResponse, EvaluationRequest, EvaluationReport, TranscriptionResponse
 
-# Define the path for temporary files
 TMP_DIR = "tmp/mock_interview"
 
 router = APIRouter(
@@ -17,59 +16,72 @@ router = APIRouter(
     tags=["Interview Core"]
 )
 
-# --- Endpoint 1: Transcribe Audio (/interview/transcribe) ---
+# --- Endpoint 1: Transcribe Audio
 @router.post("/transcribe", response_model=TranscriptionResponse)
 async def transcribe_audio(file: UploadFile = File(...), session_id: str = "temp_id"):
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="No file uploaded")
     
-    os.makedirs(TMP_DIR, exist_ok=True)
-    tmp_name = os.path.join(TMP_DIR, f"{uuid.uuid4().hex}_{file.filename}")
     
-    # Write file content asynchronously
     try:
-        async with aiofiles.open(tmp_name, "wb") as out:
-            content = await file.read()
-            await out.write(content)
-        
-        # Call the stub/Whisper model
         transcript = whisper_test.transcribe_file(tmp_name)
-        
-        # Clean up the temp file
         os.remove(tmp_name)
-
         return TranscriptionResponse(session_id=session_id, transcript=transcript)
 
     except Exception as e:
-        # Ensure cleanup on failure
-        if os.path.exists(tmp_name):
-            os.remove(tmp_name)
         raise HTTPException(status_code=500, detail=f"Transcription failed: {e}")
 
-# --- Endpoint 2: Generate Question (/interview/generate_question) ---
 @router.post("/generate_question", response_model=InterviewResponse)
 async def generate_question(req: InterviewRequest):
-    # This stub logic needs to be enhanced to handle session_id properly
+    session_id = req.session_id if req.session_id else str(uuid.uuid4())
     
-    q = llm.generate_question_stub(role=req.role, user_answer=req.user_answer)
-    
-    # Assuming the stub returns the question text
-    return InterviewResponse(session_id=req.session_id, ai_question=q)
 
-# --- Endpoint 3: Evaluate (/interview/evaluate) ---
+    db_manager = get_db_manager()
+
+    history = db_manager.get_history(session_id)
+    
+    if not history and req.user_answer is None:
+    
+        db_manager.start_session(session_id, req.role)
+        
+        ai_question = llm.generate_question_stub(role=req.role) 
+        
+    elif req.user_answer is not None:
+        last_question = history[-1]['Q'] if history else "Initial Greeting" 
+        db_manager.append_qa_pair(session_id, last_question, req.user_answer)
+        
+        #Generate follow-up question (Pass history for context)
+        full_context = "\n".join([f"Q: {qa['Q']} A: {qa['A']}" for qa in db_manager.get_history(session_id)])
+        
+        ai_question = llm.generate_question_stub(
+            role=req.role, 
+            context=full_context,
+            user_answer=req.user_answer
+        )
+        
+    else:
+        # Should not happen if logic is correct
+        raise HTTPException(status_code=400, detail="Invalid request state.")
+        
+    return InterviewResponse(
+        session_id=session_id, 
+        ai_question=ai_question, 
+        is_complete="stop" in ai_question.lower() # Placeholder
+    )
+
+#Endpoint 3: Evaluate (/interview/evaluate)
 @router.post("/evaluate", response_model=EvaluationReport)
 async def evaluate_session(req: EvaluationRequest):
-    # This stub needs to be updated to integrate Abhav's JSON logic
-    
-    semantic = llm.semantic_evaluate_stub(req.full_transcript, req.role)
-    # The evaluation.combine_scores stub needs to be replaced with the LLM call that returns EvaluationReport
-    
-    # DUMMY implementation to return the required Pydantic model
-    return EvaluationReport(
+    # DUMMY
+    report = EvaluationReport(
         technical_score=8.0,
         clarity_score=7.5,
         fluency_score=8.2,
-        detailed_feedback=semantic,
+        detailed_feedback="Placeholder feedback.",
         technical_strengths=["Strong fundamentals"],
         technical_weaknesses=["Lack of industry examples"]
     )
+    
+    # DB_MANAGER to save the final report to Firebase
+    db_manager = get_db_manager()
+    db_manager.save_final_report(req.session_id, report.model_dump())
+
+    return report
