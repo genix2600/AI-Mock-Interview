@@ -10,3 +10,4 @@ openai
 httpx
 anthropic
 firebase-admin
+genkit
