@@ -11,3 +11,4 @@ httpx
 anthropic
 firebase-admin
 genkit
+google-genai
