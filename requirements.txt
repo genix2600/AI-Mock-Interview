@@ -12,3 +12,4 @@ anthropic
 firebase-admin
 genkit
 google-genai
+opencv-python

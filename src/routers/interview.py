@@ -1,12 +1,13 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, HTTPException # Removed UploadFile, File, aiofiles
 import uuid
-import aiofiles
 import os
+
 from ..database import get_db_manager 
+
 from .. import stt_service, llm, evaluation
 from ..models import (
     InterviewRequest, InterviewResponse, EvaluationRequest, EvaluationReport, 
-    TranscriptionResponse, TranscriptionInput
+    TranscriptionResponse, TranscriptionInput # Added TranscriptionInput
 )
 
 TMP_DIR = "tmp/mock_interview"
@@ -16,34 +17,39 @@ router = APIRouter(
     tags=["Interview Core"]
 )
 
-#(Endpoint 1: /transcribe) ...
+# --- Endpoint 1: Transcribe Audio (/interview/transcribe) ---
 @router.post("/transcribe", response_model=TranscriptionResponse)
-async def transcribe_audio(file: UploadFile = File(...), session_id: str = "temp_id"):
-    
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="No file uploaded")
-    
-    tmp_name = None 
-    
-    os.makedirs(TMP_DIR, exist_ok=True)
-    tmp_name = os.path.join(TMP_DIR, f"{uuid.uuid4().hex}_{file.filename}")
+async def transcribe_audio(req: TranscriptionInput):
+    """
+    Receives audio data URI, transcribes via Gemini multimodal API, 
+    and returns text + audio features.
+    """
+    if not req.audio_data_uri:
+        raise HTTPException(status_code=400, detail="Audio data URI is missing.")
     
     try:
+        analysis_data = stt_service.transcribe_and_analyze_audio(req.audio_data_uri)
         
-        async with aiofiles.open(tmp_name, "wb") as out:
+        audio_features = {
+            "speechRateWpm": analysis_data.get("speechRateWpm", 0.0),
+            "fillerRate": analysis_data.get("fillerRate", 0.0),
+        }
         
-            content = await file.read()
-            await out.write(content)
-        
-        transcript = stt_service.transcribe_file(tmp_name)
-        os.remove(tmp_name)
+        transcript_length = len(analysis_data.get("transcript", "").split())
+        duration_sec = (transcript_length / 180) * 60 if transcript_length > 0 else 1.0
 
-        return TranscriptionResponse(session_id=session_id, transcript=transcript)
+        return TranscriptionResponse(
+            session_id=req.session_id,
+            transcript=analysis_data.get("transcript", "Transcription failed."),
+            duration_sec=duration_sec,
+            audio_features=audio_features
+        )
 
+    except ConnectionError as e:
+        raise HTTPException(status_code=503, detail=f"AI Service Unavailable: {e}")
     except Exception as e:
-        if tmp_name and os.path.exists(tmp_name):
-            os.remove(tmp_name)
-        raise HTTPException(status_code=500, detail=f"Transcription failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Transcription processing error: {e}")
+    
 
 # --- Endpoint 2: Generate Question (FIXED ai_question) ---
 @router.post("/generate_question", response_model=InterviewResponse)
