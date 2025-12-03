@@ -21,16 +21,13 @@ while True:
             
             print(f"Speed: {speed}", end="\r", flush=True)
 
-    for(x,y,width,height) in face: 
-        l=y+height//2
-        m=x+width//2
-        cv2.circle(frame,(m,l),150,(0, 255, 0),2)
-    # TODO : Add Formula to give movement of face a percentage. Higher the %, the worse. Person being interviewed must be stable.
-    # a log graph could be used.
+
+    cv2.imshow("Confidence Detection", frame)
+# TODO: Add formula for confidence(depending on face stability)scoring
+    
+    # TODO: Add formula for confidence(depending on face stability)scoring
+   
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 camera.release()
-cv2.destroyAllWindows()
-
-
