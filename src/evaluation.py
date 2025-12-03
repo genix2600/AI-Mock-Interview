@@ -1,19 +1,58 @@
-def combine_scores(semantic_scores: dict, audio_features: dict) -> dict:
+import os
+import json
+from google import genai
+from google.genai.errors import APIError
+from typing import Dict, Any
+
+try:
+    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+except Exception as e:
+    print(f"Gemini Client Initialization Error: {e}")
+    client = None
+
+def get_final_evaluation_json(role: str, full_transcript: str) -> Dict[str, Any]:
     """
-    Combine semantic (LLM) scores with audio features (if any).
-    Week1: simple weighted average; refine in Week2.
+    Calls the Gemini API to generate the structured EvaluationReport JSON.
     """
-    tech = semantic_scores.get("technical_correctness", 0)
-    prob = semantic_scores.get("problem_solving", 0)
-    comm = semantic_scores.get("communication", 0)
-    filler_rate = audio_features.get("filler_rate", 0.05)
+    if client is None:
+        raise ConnectionError("Gemini client is not initialized.")
+        
+    prompt = f"""You are an impartial Senior Technical Interview Evaluator for the '{role}' role.
+    Analyze the entire conversation transcript below and generate a STRICT JSON evaluation report.
     
-    adj = max(0, 1 - filler_rate)
-    final_score = round(((tech * 0.5) + (prob * 0.25) + (comm * 0.25)) * adj, 2)
-    return {
-        "technical_correctness": tech,
-        "problem_solving": prob,
-        "communication": comm,
-        "final_score": final_score,
-        "evidence_snippets": semantic_scores.get("evidence_snippets", [])
+    SCORING CRITERIA (0-10): Technical correctness, communication clarity, and fluency.
+    
+    TRANSCRIPT: ---{full_transcript}---
+    
+    You MUST respond ONLY with a single JSON object that adheres exactly to the required EvaluationReport schema.
+    """
+
+    output_schema = {
+        "type": "object",
+        "properties": {
+            "technical_score": {"type": "number"},
+            "clarity_score": {"type": "number"},
+            "fluency_score": {"type": "number"},
+            "detailed_feedback": {"type": "string"},
+            "technical_strengths": {"type": "array", "items": {"type": "string"}},
+            "technical_weaknesses": {"type": "array", "items": {"type": "string"}}
+        },
+        "required": ["technical_score", "clarity_score", "fluency_score", "detailed_feedback", "technical_strengths", "technical_weaknesses"]
     }
+    
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[prompt],
+            config=genai.types.GenerateContentConfig(
+                temperature=0.0,
+                response_mime_type="application/json",
+                response_schema=output_schema
+            )
+        )
+        return json.loads(response.text)
+
+    except APIError as e:
+        raise Exception(f"Gemini API Evaluation failed: {e}")
+    except Exception as e:
+        raise Exception(f"Evaluation failed: {e}")

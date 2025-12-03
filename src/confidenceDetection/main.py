@@ -18,8 +18,6 @@ while True:
         cv2.circle(frame,(m,l),150,(0, 255, 0),2)
     # TODO : Add Formula to give movement of face a percentage. Higher the %, the worse. Person being interviewed must be stable.
     # a log graph could be used.
-    maxY=frame_height-1
-    maxX=frame_width-1
 
     cv2.imshow("Camera", frame) 
     if cv2.waitKey(1) & 0xFF == ord('q'):
