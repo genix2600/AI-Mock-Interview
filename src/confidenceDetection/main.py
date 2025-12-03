@@ -1,26 +1,23 @@
 import cv2
-import math
-import numpy as np
+detector = cv2.FaceDetectorYN_create("yunet.onnx",   "",(320, 320),score_threshold=0.85,nms_threshold=0.2,top_k=500)
 
-cap=cv2.VideoCapture(0)
-face_cascade=cv2.CascadeClassifier("haarcascade_frontalface_default.xml") 
+camera=cv2.VideoCapture(0)
 while True:
+    ret,frame=camera.read()
+    h, w = frame.shape[:2]
+    detector.setInputSize((w, h))
+    _, face=detector.detect(frame)
+    if face is not None:
+        for face in face:
+            x, y, w, h = map(int, face[:4])
+            confidence=face[14]
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
     
-    ret, frame = cap.read()
-    grayScale=cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
-    face=face_cascade.detectMultiScale(grayScale,1.06,8) # Best setting i've found so far. could be fine tuned later
-    if len(face) == 0:
-        print("No faces found")# TODO: add fallback for this later
-
-    for(x,y,width,height) in face: 
-        l=y+height//2
-        m=x+width//2
-        cv2.circle(frame,(m,l),150,(0, 255, 0),2)
-    # TODO : Add Formula to give movement of face a percentage. Higher the %, the worse. Person being interviewed must be stable.
-    # a log graph could be used.
-    maxY=frame_height-1
-    maxX=frame_width-1
-
-    cv2.imshow("Camera", frame) 
+    cv2.imshow("Confidence Detection", frame)
+# TODO: Add formula for confidence(depending on face stability)scoring
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+camera.release()
+cv2.destroyAllWindows()
+
+
