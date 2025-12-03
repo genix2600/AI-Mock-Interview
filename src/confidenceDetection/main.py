@@ -1,10 +1,10 @@
 import cv2
 import time
 detector = cv2.FaceDetectorYN_create("yunet.onnx",   "",(320, 320),score_threshold=0.85,nms_threshold=0.2,top_k=500)
-
+change=31 # 31= every second
 camera=cv2.VideoCapture(0)
-speed=None
-prevX=None
+initialX=0
+finalX=0
 ctr=0 # number of frames to count for delta X ( increase = less accurate )
 while True:
     
@@ -18,18 +18,21 @@ while True:
             x, y, w, h = map(int, face[:4])
             confidence=face[14]
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-            
-        if prevX is not None:
-            speed=x-prevX
-            print(f"Speed: {speed}", end="\r", flush=True)
-        prevX=x
+            initialX=x
+             #1. change in position with time ( speed ) for face
+            if(ctr==0):
+                finalX=x
+                ctr=ctr+change 
+            ctr=ctr-1
 
-    for(x,y,width,height) in face: 
-        l=y+height//2
-        m=x+width//2
-        cv2.circle(frame,(m,l),150,(0, 255, 0),2)
-    # TODO : Add Formula to give movement of face a percentage. Higher the %, the worse. Person being interviewed must be stable.
-    # a log graph could be used.
+            speed=finalX-initialX
+            print(f"Speed: {speed}", end="\r", flush=True)
+
+    
+    cv2.imshow("Confidence Detection", frame)
+    
+    # TODO: Add formula for confidence(depending on face stability)scoring
+   
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
