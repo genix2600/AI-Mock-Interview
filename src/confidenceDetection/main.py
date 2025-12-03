@@ -4,6 +4,7 @@ detector = cv2.FaceDetectorYN_create("yunet.onnx",   "",(320, 320),score_thresho
 
 camera=cv2.VideoCapture(0)
 speed=None
+prevX=None
 ctr=0 # number of frames to count for delta X ( increase = less accurate )
 while True:
     
@@ -17,9 +18,11 @@ while True:
             x, y, w, h = map(int, face[:4])
             confidence=face[14]
             cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-             #1. change in position with time ( speed ) for face
             
+        if prevX is not None:
+            speed=x-prevX
             print(f"Speed: {speed}", end="\r", flush=True)
+        prevX=x
 
     
     cv2.imshow("Confidence Detection", frame)
