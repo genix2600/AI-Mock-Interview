@@ -1,30 +1,33 @@
-# src/models.py
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 
-# --- Request Models ---
 
 class InterviewRequest(BaseModel):
     """Input for generating the next question."""
     session_id: str = Field(..., description="Unique ID for tracking the interview session.")
+    user_id: str = Field("guest", description="ID of the user, used for database indexing.") # Added for Firebase
     role: str = Field(..., description="The job role being interviewed for (e.g., 'Data Analyst').")
     user_answer: Optional[str] = Field(None, description="The user's last transcribed answer text.")
-    # difficulty can be managed internally or included here if needed later
+    difficulty: Optional[str] = "medium" 
+
+class TranscriptionInput(BaseModel):
+    """Input containing the Base64 audio URI for the multimodal STT service."""
+    session_id: str
+    audio_data_uri: str = Field(..., description="Audio content as a data URI (data:<mimetype>;base64,<encoded_data>).")
 
 class EvaluationRequest(BaseModel):
     """Input for triggering the final evaluation."""
     session_id: str
     role: str
     full_transcript: str = Field(..., description="Concatenated string of the full Q&A conversation history.")
-    audio_features: Optional[Dict[str, Any]] = None # For potential external scoring features
-
-# --- Response Models ---
+    audio_features: Optional[Dict[str, Any]] = None
 
 class TranscriptionResponse(BaseModel):
-    """Output after transcribing user audio."""
+    """Output after transcribing user audio via Gemini Multimodal STT."""
     session_id: str
     transcript: str
-    # We remove audio_path, as it's an internal detail, not API output
+    duration_sec: float = Field(..., description="Estimated duration of the audio in seconds.") # NEW
+    audio_features: Dict[str, float] = Field(..., description="Structured analysis features (WPM, filler rate).") # NEW
 
 class InterviewResponse(BaseModel):
     """Output containing the AI's question."""
