@@ -1,12 +1,12 @@
+# src/stt_service.py
 import os
 import base64
 import json
-import uuid
 from google import genai
 from google.genai.errors import APIError
 from typing import Dict, Any
 
-# Client initialization should happen outside the function for efficiency
+# Client initialization
 try:
     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 except Exception as e:
@@ -16,32 +16,31 @@ except Exception as e:
 
 def parse_data_uri(data_uri: str) -> tuple[str, bytes]:
     """Parses a Base64 data URI to extract MIME type and raw bytes."""
-    header, encoded_data = data_uri.split(';base64,', 1)
-    mime_type = header.split(':', 1)[1]
-    decoded_bytes = base64.b64decode(encoded_data)
-    return mime_type, decoded_bytes
+    try:
+        header, encoded_data = data_uri.split(';base64,', 1)
+        mime_type = header.split(':', 1)[1]
+        decoded_bytes = base64.b64decode(encoded_data)
+        return mime_type, decoded_bytes
+    except Exception:
+        # Fallback if URI format is slightly off, assuming raw base64 might be passed or default audio
+        return "audio/wav", base64.b64decode(data_uri.split(',')[-1])
 
 def transcribe_and_analyze_audio(data_uri: str) -> Dict[str, Any]:
     """
-    Transcribes audio using Gemini and simultaneously analyzes speech features.
-    Returns a dictionary matching the TranscribeSpokenAnswersOutputSchema structure.
+    Transcribes audio using Gemini (Direct Bytes) and analyzes speech features.
     """
     if client is None:
         raise ConnectionError("Gemini client is not initialized. Check API key.")
         
+    # 1. Parse Bytes directly (No file saving needed)
     mime_type, audio_bytes = parse_data_uri(data_uri)
 
-    # Temporary file creation to handle audio input for the Python SDK
-    temp_file_name = f"temp_audio_{uuid.uuid4().hex}"
-    with open(temp_file_name, 'wb') as f:
-        f.write(audio_bytes)
-    
     output_schema = {
         "type": "object",
         "properties": {
             "transcript": {"type": "string"},
-            "speechRateWpm": {"type": "number", "description": "Estimated words per minute."},
-            "fillerRate": {"type": "number", "description": "Rate of filler words (um, uh, like) on a scale of 0.0 to 1.0."}
+            "speechRateWpm": {"type": "number"},
+            "fillerRate": {"type": "number"}
         },
         "required": ["transcript", "speechRateWpm", "fillerRate"]
     }
@@ -53,7 +52,9 @@ def transcribe_and_analyze_audio(data_uri: str) -> Dict[str, Any]:
     )
 
     try:
-        audio_part = genai.types.Part.from_file(path=temp_file_name, mime_type=mime_type)
+        # 2. Use from_bytes to send data directly from memory
+        # This bypasses the 'from_file' error and is faster
+        audio_part = genai.types.Part.from_bytes(data=audio_bytes, mime_type=mime_type)
 
         response = client.models.generate_content(
             model='gemini-2.5-flash',
@@ -64,13 +65,10 @@ def transcribe_and_analyze_audio(data_uri: str) -> Dict[str, Any]:
             )
         )
         
-        os.remove(temp_file_name)
-
         return json.loads(response.text)
 
     except APIError as e:
-        os.remove(temp_file_name) if os.path.exists(temp_file_name) else None
         raise ConnectionError(f"Gemini API Error during STT: {e}")
     except Exception as e:
-        os.remove(temp_file_name) if os.path.exists(temp_file_name) else None
+        # This catches if 'from_bytes' also has issues or other logic fails
         raise Exception(f"STT Service Error: {e}")
