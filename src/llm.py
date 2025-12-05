@@ -6,13 +6,13 @@ try:
 except Exception:
     client = None
 
-def generate_question_stub(role: str, context: str = "", user_answer: str = "") -> str:
+def generate_contextual_question(role: str, context: str = "", user_answer: str = "") -> str:
     """
-    Generates the next contextual interview question using the Gemini API.
+    Generates the next contextual interview question using the functional Gemini API.
     """
     if client is None:
         return "ERROR: LLM service unavailable."
-
+    
     if context == "START":
         system_instruction = f"You are a Senior Interviewer for a {role}. Start the interview with a foundational question."
         user_prompt = "Start the interview now."

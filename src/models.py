@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 
-
 class InterviewRequest(BaseModel):
     """Input for generating the next question."""
     session_id: str = Field(..., description="Unique ID for tracking the interview session.")
