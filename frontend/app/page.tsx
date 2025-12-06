@@ -8,7 +8,7 @@ export default function Dashboard() {
     <main className="min-h-screen flex flex-col items-center justify-center gap-6 text-center">
       <h1 className="text-4xl font-bold">Mock Interview Platform</h1>
       <Button asChild size="lg">
-        <Link href="/interview/setup">Start Interview</Link>
+        <Link href="/setup">Start Interview</Link>
       </Button>
     </main>
   );
