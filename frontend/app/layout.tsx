@@ -1,16 +1,22 @@
-import './globals.css';
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css"; // <--- THIS IMPORT IS CRITICAL
 
-export const metadata = {
-  title: "Mock Interview Platform",
-  description: "AI-powered mock interviews."
+const inter = Inter({ subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: "AI Interviewer",
+  description: "Ace your next technical interview",
 };
 
-import { ReactNode } from 'react';
-
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }
