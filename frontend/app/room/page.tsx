@@ -1,47 +1,107 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge'; // Run: npx shadcn-ui@latest add badge
-import { Mic, Clock, LogOut, BrainCircuit } from 'lucide-react';
-import RecordingComponent from '@/components/RecordingComponent'; // Your existing component
+import { Clock, LogOut, BrainCircuit, AlertCircle } from 'lucide-react';
+import RecordingComponent from '@/components/RecordingComponent'; 
+import { fetchNextQuestion, sendAudioForTranscription } from '@/services/api'; 
+import { InterviewRole } from '@/types/apiTypes'; 
 
 export default function InterviewRoomPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const role = searchParams.get('role') || 'Candidate';
+  const sessionId = searchParams.get('session_id') || '';
+  const role = searchParams.get('role') as InterviewRole || 'Data Analyst';
   
-  // Timer Logic
+  // --- UI/API State ---
+  const [question, setQuestion] = useState('Initializing AI Interface...');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // --- Timer Logic ---
   const [seconds, setSeconds] = useState(0);
-  
   useEffect(() => {
-    const interval = setInterval(() => {
-      setSeconds(s => s + 1);
-    }, 1000);
+    if (isComplete) return;
+    const interval = setInterval(() => setSeconds(s => s + 1), 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isComplete]);
 
-  // Format time as MM:SS
   const formatTime = (totalSeconds: number) => {
     const mins = Math.floor(totalSeconds / 60);
     const secs = totalSeconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleEndSession = () => {
-    // In the real app, this will navigate to /interview/feedback
-    router.push('/');
+  // --- CORE INTEGRATION LOGIC ---
+
+  const handleStartSession = useCallback(async () => {
+    if (!sessionId) {
+      setError("No Session ID provided.");
+      return;
+    }
+    setIsProcessing(true);
+    
+    try {
+      // 1. Initial Call (Start Session)
+      const response = await fetchNextQuestion({ session_id: sessionId, user_id: 'guest', role, user_answer: null });
+      setQuestion(response.ai_question);
+      setIsComplete(response.is_complete);
+    } catch (err) {
+      console.error(err);
+      setError('Connection failed. Is the backend running?');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [sessionId, role]);
+
+  // Start session on mount
+  useEffect(() => {
+    handleStartSession();
+  }, [handleStartSession]);
+
+  
+  const handleRecordingComplete = useCallback(async (base64Audio: string) => {
+    setIsProcessing(true);
+    setError(null);
+    
+    try {
+      // 1. Transcribe Audio
+      const transcribeResponse = await sendAudioForTranscription({ session_id: sessionId, audio_data_uri: base64Audio });
+      const transcript = transcribeResponse.transcript;
+      
+      // 2. Get Next Question (or End Session)
+      const nextQuestionResponse = await fetchNextQuestion({
+        session_id: sessionId,
+        user_id: 'guest', 
+        role,
+        user_answer: transcript 
+      });
+
+      setQuestion(nextQuestionResponse.ai_question);
+      setIsComplete(nextQuestionResponse.is_complete);
+      
+    } catch (err) {
+      console.error(err);
+      setError('Failed to process answer. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [sessionId, role]);
+
+
+  const handleEndInterview = () => {
+    router.push(`/interview/feedback?session_id=${sessionId}&role=${encodeURIComponent(role)}`);
   };
 
+  // --- RENDER ---
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       
-      {/* 1. Header Bar */}
+      {/* Header */}
       <header className="bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm sticky top-0 z-10">
-        
-        {/* Left: Role & Status */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 px-3 py-1 bg-red-50 text-red-600 rounded-full border border-red-100 text-xs font-bold uppercase tracking-wider">
             <span className="relative flex h-2 w-2">
@@ -50,80 +110,82 @@ export default function InterviewRoomPage() {
             </span>
             Live Session
           </div>
-          <h1 className="text-lg font-semibold text-slate-800 hidden md:block">
-            {role} Interview
-          </h1>
+          <h1 className="text-lg font-semibold text-slate-800 hidden md:block">{role} Interview</h1>
         </div>
 
-        {/* Center: Timer */}
         <div className="flex items-center gap-2 text-slate-500 bg-slate-100 px-4 py-2 rounded-md font-mono text-sm font-medium">
           <Clock className="h-4 w-4" />
           {formatTime(seconds)}
         </div>
 
-        {/* Right: End Button */}
-        <Button variant="destructive" size="sm" onClick={handleEndSession}>
+        <Button variant="destructive" size="sm" onClick={handleEndInterview}>
           <LogOut className="h-4 w-4 mr-2" /> End
         </Button>
       </header>
 
-      {/* 2. Main Visualizer Area */}
+      {/* Main Content */}
       <main className="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 flex flex-col gap-6">
         
+        {/* Error Banner */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md flex items-center gap-2">
+            <AlertCircle className="h-5 w-5" />
+            <p className="text-sm font-medium">{error}</p>
+          </div>
+        )}
+
         {/* AI Persona Card */}
         <Card className="flex-1 bg-slate-900 border-slate-800 shadow-2xl relative overflow-hidden flex flex-col items-center justify-center min-h-[400px]">
-          
-          {/* Animated Background Glow */}
           <div className="absolute inset-0 bg-linear-to-b from-blue-500/10 to-transparent pointer-events-none" />
           
           <CardContent className="relative z-10 flex flex-col items-center text-center space-y-8 p-8 max-w-2xl">
-            
-            {/* The "AI Brain" Visualizer */}
+            {/* Visualizer */}
             <div className="relative">
-              <div className="absolute -inset-4 bg-blue-500/20 rounded-full blur-xl animate-pulse"></div>
-              <div className="h-24 w-24 bg-linear-to-tr from-blue-600 to-cyan-500 rounded-full flex items-center justify-center shadow-inner border border-white/10">
+              {isProcessing && <div className="absolute -inset-4 bg-blue-500/20 rounded-full blur-xl animate-pulse" />}
+              <div className={`h-24 w-24 bg-linear-to-tr from-blue-600 to-cyan-500 rounded-full flex items-center justify-center shadow-inner border border-white/10 ${isProcessing ? 'animate-bounce' : ''}`}>
                 <BrainCircuit className="h-12 w-12 text-white" />
               </div>
             </div>
 
-            {/* The Question Text */}
+            {/* Question Text */}
             <div className="space-y-4">
               <p className="text-slate-400 text-sm uppercase tracking-widest font-semibold">
-                AI Interviewer asking:
+                {isProcessing ? 'AI is thinking...' : 'AI Interviewer asking:'}
               </p>
               <h2 className="text-2xl md:text-3xl font-medium text-white leading-relaxed">
-                "Can you walk me through a challenging project where you had to optimize a machine learning model for production?"
+                "{question}"
               </h2>
             </div>
-
           </CardContent>
         </Card>
 
-        {/* 3. User Interaction Area */}
+        {/* User Interaction Area */}
         <Card className="border-t-4 border-blue-500 shadow-lg bg-white">
           <CardHeader className="pb-2">
             <CardTitle className="text-center text-sm font-semibold text-slate-500 uppercase tracking-wider">
-              Your Turn to Speak
+              {isComplete ? 'Session Finished' : 'Your Turn to Speak'}
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center pb-6">
             
-            {/* This is where your RecordingComponent will live.
-               For now, we mock the UI so you see how it fits.
-            */}
-            <div className="w-full max-w-md">
-               {/* <RecordingComponent ... /> */}
-               <Button size="xl" className="w-full h-16 text-lg rounded-full shadow-xl shadow-blue-200/50 transition-all hover:scale-105 active:scale-95">
-                 <Mic className="h-6 w-6 mr-2" /> Start Recording Answer
+            {isComplete ? (
+               <Button onClick={handleEndInterview} size="lg" className="w-full max-w-md bg-green-600 hover:bg-green-700 text-lg py-6">
+                 View Final Results
                </Button>
-               <p className="text-center text-xs text-slate-400 mt-3">
-                 Click to start speaking. Click again to submit.
-               </p>
-            </div>
-
+            ) : (
+               <div className="w-full max-w-md">
+                 <RecordingComponent 
+                   onRecordingComplete={handleRecordingComplete} 
+                   disabled={isProcessing} 
+                 />
+                 <p className="text-center text-xs text-slate-400 mt-3">
+                   {isProcessing ? 'Analyzing audio...' : 'Click to start recording. Click again to submit.'}
+                 </p>
+               </div>
+            )}
+            
           </CardContent>
         </Card>
-
       </main>
     </div>
   );
