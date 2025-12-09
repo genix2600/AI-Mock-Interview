@@ -1,40 +1,60 @@
 import os
+import json
 from firebase_admin import initialize_app, firestore, credentials
 from typing import Dict, Any, List 
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv() 
 
-SERVICE_ACCOUNT_PATH = os.getenv('FIREBASE_SERVICE_ACCOUNT_PATH')
-DB = None # Global Firestore client instance
+FIREBASE_CREDENTIALS_JSON = os.getenv('FIREBASE_CREDENTIALS_JSON')
+SERVICE_ACCOUNT_PATH = os.getenv('FIREBASE_SERVICE_ACCOUNT_PATH') # Local fallback
+DB = None 
+GLOBAL_DB_MANAGER = None
 
 def initialize_firebase():
-    """Initializes the Firebase Admin SDK using the service account credentials."""
+    """Initializes the Firebase Admin SDK using the appropriate method (Env Var or File)."""
     global DB
     
     if DB is not None:
         return
 
-    if not SERVICE_ACCOUNT_PATH or not os.path.exists(SERVICE_ACCOUNT_PATH):
-        print("WARNING: Firebase service account path not found or file does not exist. DB manager is disabled.")
-        return
+    cred = None
+    
+    if FIREBASE_CREDENTIALS_JSON:
+        try:
+            cred_dict = json.loads(FIREBASE_CREDENTIALS_JSON)
+            cred = credentials.Certificate(cred_dict)
+            print("Firebase Firestore initialized successfully via environment variable.")
+        except Exception as e:
+            print(f"ERROR: Failed to load Firebase credentials from JSON environment variable: {e}")
+            return
+            
+    elif SERVICE_ACCOUNT_PATH and os.path.exists(SERVICE_ACCOUNT_PATH):
+        try:
+            cred = credentials.Certificate(SERVICE_ACCOUNT_PATH)
+            print("Firebase Firestore initialized successfully via local file path.")
+        except Exception as e:
+            print(f"ERROR: Failed to load Firebase credentials from local file: {e}")
+            return
 
-    try:
-        cred = credentials.Certificate(SERVICE_ACCOUNT_PATH)
-        initialize_app(cred)
-        DB = firestore.client()
-        print("Firebase Firestore initialized successfully.")
-    except Exception as e:
-        print(f"ERROR: Failed to initialize Firebase: {e}")
+    if cred:
+        try:
+            initialize_app(cred)
+            DB = firestore.client()
+        except Exception as e:
+            print(f"ERROR: Failed to initialize Firebase App: {e}")
+            DB = None
+    else:
+        print("WARNING: Firebase credentials not found. DB manager is disabled. Check FIREBASE_CREDENTIALS_JSON or FIREBASE_SERVICE_ACCOUNT_PATH.")
         DB = None
+
 
 class SessionManager:
     """Manages CRUD operations for interview sessions in Firestore."""
     
     def __init__(self):
-
         if DB is None:
-            raise ConnectionError("Firestore client not initialized. Check firebase_creds.json path and content.")
+            raise ConnectionError("Firestore client not initialized. Check credentials.")
         self.db = DB
         self.collection = 'interview_sessions' 
 
@@ -74,13 +94,11 @@ class SessionManager:
             'completed_at': firestore.SERVER_TIMESTAMP
         })
 
-#DB_MANAGER = SessionManager()
-
-GLOBAL_DB_MANAGER = None
 
 def get_db_manager() -> 'SessionManager':
     """Returns the single, initialized SessionManager instance."""
     global GLOBAL_DB_MANAGER
     if GLOBAL_DB_MANAGER is None:
+        initialize_firebase() 
         GLOBAL_DB_MANAGER = SessionManager()
     return GLOBAL_DB_MANAGER
