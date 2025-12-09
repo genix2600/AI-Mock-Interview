@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,8 @@ import RecordingComponent from '@/components/RecordingComponent';
 import { fetchNextQuestion, sendAudioForTranscription } from '@/services/api'; 
 import { InterviewRole } from '@/types/apiTypes'; 
 
-export default function InterviewRoomPage() {
+// 1. Move the main logic into this inner component
+function RoomContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id') || '';
@@ -136,13 +137,13 @@ export default function InterviewRoomPage() {
 
         {/* AI Persona Card */}
         <Card className="flex-1 bg-slate-900 border-slate-800 shadow-2xl relative overflow-hidden flex flex-col items-center justify-center min-h-[400px]">
-          <div className="absolute inset-0 bg-linear-to-b from-blue-500/10 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-blue-500/10 to-transparent pointer-events-none" />
           
           <CardContent className="relative z-10 flex flex-col items-center text-center space-y-8 p-8 max-w-2xl">
             {/* Visualizer */}
             <div className="relative">
               {isProcessing && <div className="absolute -inset-4 bg-blue-500/20 rounded-full blur-xl animate-pulse" />}
-              <div className={`h-24 w-24 bg-linear-to-tr from-blue-600 to-cyan-500 rounded-full flex items-center justify-center shadow-inner border border-white/10 ${isProcessing ? 'animate-bounce' : ''}`}>
+              <div className={`h-24 w-24 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-full flex items-center justify-center shadow-inner border border-white/10 ${isProcessing ? 'animate-bounce' : ''}`}>
                 <BrainCircuit className="h-12 w-12 text-white" />
               </div>
             </div>
@@ -188,5 +189,21 @@ export default function InterviewRoomPage() {
         </Card>
       </main>
     </div>
+  );
+}
+
+// 2. The default export now wraps everything in Suspense
+export default function InterviewRoomPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-4">
+          <BrainCircuit className="h-12 w-12 text-blue-500 animate-pulse" />
+          <p className="text-slate-500 font-medium animate-pulse">Connecting to Interview Room...</p>
+        </div>
+      </div>
+    }>
+      <RoomContent />
+    </Suspense>
   );
 }
