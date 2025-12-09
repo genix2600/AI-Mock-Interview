@@ -52,12 +52,11 @@ export default function Home() {
                   </div>
                   
                   <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none font-headline">
-                    Ace Your Next Tech Interview with AI, rate it out of 10 kriti
+                    Ace Your Next Tech Interview with AI
                   </h1>
                   
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
                     Practice with an AI that listens, understands, and evaluates you in real-time. Get instant feedback on your technical accuracy, clarity, and fluency.
-                    wsg kriti
                   </p>
                 </div>
                 
