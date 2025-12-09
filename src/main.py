@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware # <--- NEW IMPORT
+from fastapi.middleware.cors import CORSMiddleware 
 from contextlib import asynccontextmanager
 from src.routers import interview 
 from src.database import initialize_firebase 
@@ -8,22 +8,14 @@ import os
 
 load_dotenv() 
 
-# --- Application Lifespan Context ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Handles startup and shutdown events for the application, initializing services.
-    """
     print("Application Startup: Initializing services...")
-    
-    # Initialize Firebase using the environment variable path
     if os.getenv('FIREBASE_SERVICE_ACCOUNT_PATH'):
         initialize_firebase()
     else:
-        print("WARNING: Skipping Firebase initialization (FIREBASE_SERVICE_ACCOUNT_PATH not set).")
-    
-    yield # Application serves requests here
-    
+        print("WARNING: Skipping Firebase initialization.")
+    yield 
     print("Application Shutdown: Cleaning up resources...")
 
 app = FastAPI(
@@ -32,22 +24,16 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-origins = [
-    "http://localhost:3000",    # Next.js Frontend
-    "http://127.0.0.1:3000",    # Alternative Localhost
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods (GET, POST, OPTIONS, etc.)
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
 app.include_router(interview.router)
 
-# --- Health Check Endpoint ---
 @app.get("/health", tags=["Health"])
 async def health():
-    """API Health Check."""
     return {"status": "ok", "service": "AI Mock Interview Backend"}
