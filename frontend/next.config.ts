@@ -1,30 +1,29 @@
-// frontend/next.config.ts
+// frontend/next.config.ts - CORRECTED VERSION
 
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-    // --- Add the rewrites function here ---
+    
+    // 1. Rewrites remain correct
     async rewrites() {
         return [
             {
-                // This handles the link from the Landing Page/Setup Page: /interview/setup
                 source: '/interview/setup',
                 destination: '/setup', 
             },
             {
-                // This handles the link from the Setup Page: /interview/room
                 source: '/interview/room',
-                destination: '/room',      
+                destination: '/room',       
             },
             {
-                // This handles the link from the Room Page: /interview/feedback
                 source: '/interview/feedback', 
-                destination: '/feedback',    
+                destination: '/feedback',     
             },
         ];
     },
-
-    // Optional: Add other Next.js specific config options here
+    
+    // 2. The experimental block is removed because it caused the error.
+    // The alias fix is applied in tsconfig.json below.
 };
 
 export default nextConfig;

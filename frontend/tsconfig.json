@@ -18,6 +18,9 @@
         "name": "next"
       }
     ],
+    
+    // 👇 CRITICAL ADDITION FOR ALIAS FIX
+    "baseUrl": ".", 
     "paths": {
       "@/*": ["./*"]
     }
