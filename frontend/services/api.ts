@@ -8,7 +8,7 @@ import {
   EvaluationReport 
 } from '@/types/apiTypes';
 
-const API_BASE_URL = "http://127.0.0.1:8000/interview";
+const API_BASE_URL = "https://ai-mock-interview-5vz1.onrender.com/interview";
 
 async function apiCall<T>(endpoint: string, data: any): Promise<T> {
   try {
@@ -16,7 +16,6 @@ async function apiCall<T>(endpoint: string, data: any): Promise<T> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        // Add Authorization headers here if you add auth later
       },
       body: JSON.stringify(data),
     });

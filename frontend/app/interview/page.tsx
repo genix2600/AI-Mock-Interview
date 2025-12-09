@@ -1,18 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import RecordingComponent from '@/components/RecordingComponent'; // Ensure this file exists from previous step
+import RecordingComponent from '@/components/RecordingComponent'; 
 
-export default function InterviewRoomPage() {
+// 1. We move the main logic into this inner component
+function InterviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const role = searchParams.get('role') || 'Candidate';
   const sessionId = searchParams.get('session_id');
 
-  // UI State (Mock data for visual testing)
+  // UI State
   const [question, setQuestion] = useState("Welcome! I'm your AI interviewer. To get started, could you please tell me about a challenging project you've worked on recently?");
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -29,7 +30,6 @@ export default function InterviewRoomPage() {
   };
 
   const handleEndInterview = () => {
-    // Navigate to feedback page
     router.push(`/interview/feedback?session_id=${sessionId}`);
   };
 
@@ -52,7 +52,7 @@ export default function InterviewRoomPage() {
         {/* AI Persona / Visualizer */}
         <Card className="flex-1 bg-slate-900 border-none shadow-lg overflow-hidden relative">
           <CardContent className="h-full flex flex-col items-center justify-center text-center p-8">
-            <div className="h-32 w-32 rounded-full bg-linear-to-tr from-blue-500 to-purple-600 flex items-center justify-center mb-6 shadow-2xl animate-bounce">
+            <div className="h-32 w-32 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center mb-6 shadow-2xl animate-bounce">
               <span className="text-4xl">🤖</span>
             </div>
             {isProcessing ? (
@@ -73,7 +73,6 @@ export default function InterviewRoomPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex justify-center pb-8">
-            {/* The Recording Component we built effectively acts as the "Microphone Button" */}
             <RecordingComponent 
               onRecordingComplete={handleRecordingComplete} 
               disabled={isProcessing} 
@@ -83,5 +82,18 @@ export default function InterviewRoomPage() {
 
       </main>
     </div>
+  );
+}
+
+// 2. The default export now wraps the content in Suspense
+export default function InterviewRoomPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <p className="text-slate-500 animate-pulse">Loading interview environment...</p>
+      </div>
+    }>
+      <InterviewContent />
+    </Suspense>
   );
 }
