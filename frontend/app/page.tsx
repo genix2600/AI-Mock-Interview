@@ -57,6 +57,7 @@ export default function Home() {
                   
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
                     Practice with an AI that listens, understands, and evaluates you in real-time. Get instant feedback on your technical accuracy, clarity, and fluency.
+                    wsg kriti
                   </p>
                 </div>
                 
@@ -125,7 +126,7 @@ export default function Home() {
       
       {/* 4. Footer */}
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t bg-background">
-        <p className="text-xs text-muted-foreground">&copy; 2024 Interview Ace. Built for Techfest IIT Bombay.</p>
+        <p className="text-xs text-muted-foreground">&copy; 2025 Interview Ace. Built for Techfest IIT Bombay.</p>
       </footer>
       
     </div>
