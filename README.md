@@ -1,46 +1,33 @@
-# AI Mock Interview Platform  
-A real-time, voice enabled AI system designed for the **UpSkill India Challenge (Techfest IIT Bombay)**. The platform simulates a progessional technical interview environment, generating dynamic questions and providing structured, objective feedback for career readiness.
+# AI Mock Interview Platform
 
-## Project Overview
-Traditional mock interviews suffer from inconsistency and lack of personalized, objective metrics. Our platform addresses this by leveraging Large Language Models (LLMs) and Speech-to-Text (STT) to deliver a scalable, fully automated interview experience.
+**Event:** UpSkill India Challenge – Techfest IIT Bombay 2025
+**Team:** Fantastic Four
 
+![Project Status](https://img.shields.io/badge/Status-Live-success) ![Tech Stack](https://img.shields.io/badge/Stack-Next.js%20%7C%20FastAPI%20%7C%20Gemini%20Flash-blue)
 
-- **Real-time Voice Interaction: User speaks their answers; the system transcribes and responds with the next question.**
+A real-time, voice-enabled AI system designed to simulate professional technical interviews. The platform leverages Large Language Models (LLMs) and Speech-to-Text (STT) technology to generate dynamic, role-specific questions and provide structured, objective feedback for career readiness.
 
-- **Domain Specificity: Supports multiple role tracks (e.g., Data Analyst, ML Engineer, Cybersecurity).**
-
-- **Contextual Interview Flow: LLM dynamically generates follow-up questions based on the user's previous answers, simulating a human interviewer.**
-
-- **Structured Evaluation: Provides granular scoring on Technical Correctness, Communication Clarity, and Fluency.**
-
-
-##
-
-### Core AI Functionality
-- Whisper-based audio transcription (API)
-- LLM-powered question generation (GPT/Gemini)
-- Rule-based + model-assisted evaluation engine
-- Database Integration: Firebase Admin SDK
-
-### API Endpoints
-- `/health` - GET - API Health Check
-- `/interview/transcribe` - POST - Converts user audio to text transcript
-- `/interview/generate_question` - POST - Generates the next dynamic question
-- `/interview/evaluate` - POST - Generates final structured score and feedback
 ---
 
-## System Architecture
-The system uses a lightweight **microservice-style architecture** centered around a Python backend managing the AI orchestration and state.
+## Project Overview
 
-### Backend - FastAPI (Python)
-### Frontend - React (TypeScript)
-### LLM - OpenAI/Gemini APIs
-### Database - Firebase
+Traditional mock interviews suffer from inconsistency, high costs, and a lack of personalized, objective metrics. Our platform addresses this gap by delivering a scalable, fully automated interview experience that mimics a human "Bar Raiser" interviewer.
 
+### Key Features
+* **Real-time Voice Interaction:** Users speak their answers naturally; the system transcribes audio and responds with context-aware follow-up questions.
+* **Dynamic Context:** The AI remembers conversation history, asking harder questions when you answer correctly and digging deeper when you are vague.
+* **Structured Evaluation:** Post-interview, users receive a detailed JSON report card scoring **Technical Accuracy**, **Communication Clarity**, and **Problem Solving Depth**.
+* **Role Specificity:** Supports tailored tracks for Data Analysts, Machine Learning Engineers, and Cybersecurity experts.
 
-=======
-## Team
-- `Aaryaman Vaidya` - Team Lead
-- `Abhav Jain` - Backend/Frontend Developer
-- `Annem Saad` - AI Research / Testing
-- `Ritam Sarkar` - Documentation
+---
+
+##  Architecture Overview
+
+The system follows a decoupled **microservices architecture** to ensure scalability and separation of concerns.
+
+```mermaid
+graph LR
+    User[User (Browser)] -- Audio/Voice --> Frontend[Next.js Frontend (Netlify)]
+    Frontend -- API Requests (Proxy) --> Backend[FastAPI Backend (Render)]
+    Backend -- Auth/Storage --> Firebase[(Firebase Firestore)]
+    Backend -- Generation/Eval --> AI[Gemini 2.5 Flash API]
