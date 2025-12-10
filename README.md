@@ -27,7 +27,7 @@ The system follows a decoupled **microservices architecture** to ensure scalabil
 
 ```mermaid
 graph LR
-    User[User (Browser)] -- Audio/Voice --> Frontend[Next.js Frontend (Netlify)]
-    Frontend -- API Requests (Proxy) --> Backend[FastAPI Backend (Render)]
-    Backend -- Auth/Storage --> Firebase[(Firebase Firestore)]
-    Backend -- Generation/Eval --> AI[Gemini 2.5 Flash API]
+    User["User (Browser)"] -- "Audio/Voice" --> Frontend["Next.js Frontend (Netlify)"]
+    Frontend -- "API Requests (Proxy)" --> Backend["FastAPI Backend (Render)"]
+    Backend -- "Auth/Storage" --> Firebase[("Firebase Firestore")]
+    Backend -- "Generation/Eval" --> AI["Gemini 2.0 Flash API"]

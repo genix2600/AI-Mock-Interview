@@ -1,19 +1,20 @@
-import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware 
 from contextlib import asynccontextmanager
 from src.routers import interview 
 from src.database import initialize_firebase 
 from dotenv import load_dotenv
+import os
 
 load_dotenv() 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Application Startup: Initializing services...")
-    
-    initialize_firebase()
-    
+    if os.getenv('FIREBASE_SERVICE_ACCOUNT_PATH'):
+        initialize_firebase()
+    else:
+        print("WARNING: Skipping Firebase initialization.")
     yield 
     print("Application Shutdown: Cleaning up resources...")
 
@@ -23,17 +24,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-origins = [
-    "http://localhost:3000",                      # Local Development
-    "http://127.0.0.1:3000",                      # Local Development (Alternative)
-    "https://f4-ai-mock-interview.netlify.app",   # Your Netlify Frontend
-    "https://f4-ai-mock-interview.netlify.app/"   # Trailing slash variant
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,      # Use the specific list
-    allow_credentials=True,     # Verified safe with specific origins
+    allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
