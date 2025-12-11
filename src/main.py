@@ -24,6 +24,12 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+origins = [
+    "http://localhost:3000",
+    "http://192.168.56.1:3000",
+    "https://f4-ai-mock-interview.netlify.app/",
+    "*"
+]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
