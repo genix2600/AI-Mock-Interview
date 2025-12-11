@@ -8,7 +8,7 @@ export default function Header() {
         
         <div className="relative h-10 w-40"> 
           <Image 
-            src="/logo.png" 
+            src="/Interview Ace.png" 
             alt="Interview ACE Logo" 
             fill
             className="object-contain object-left"
