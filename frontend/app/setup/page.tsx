@@ -2,32 +2,38 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { v4 as uuidv4 } from 'uuid'; // Ensure you have: npm install uuid @types/uuid
+import { v4 as uuidv4 } from 'uuid';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectItem, SelectValue, SelectContent } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Briefcase, Activity, AlertCircle } from 'lucide-react';
+import { Briefcase, Activity, AlertCircle, Pencil } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function InterviewSetupPage() {
   const router = useRouter();
   
-  // State for form selection
-  const [role, setRole] = useState('');
+  const [roleTitle, setRoleTitle] = useState(''); // Changed from 'role' to 'roleTitle'
+  const [jobDescription, setJobDescription] = useState(''); // New state for JD
   const [difficulty, setDifficulty] = useState('Medium');
   const [isStarting, setIsStarting] = useState(false);
 
   const start = () => {
-    if (!role) return;
+    // Validate that both Role Title and JD are provided
+    if (!roleTitle || !jobDescription) return;
 
     setIsStarting(true);
     
-    // 1. Generate Unique Session ID (Critical for Backend)
     const sessionId = uuidv4();
     
-    // 2. Navigate to Room with Params
-    // We pass 'role' and 'session_id' so the Room can initialize the AI
-    router.push(`/room?session_id=${sessionId}&role=${encodeURIComponent(role)}&difficulty=${difficulty}`);
+    // Pass ALL custom parameters (Title, JD, Difficulty)
+    router.push(
+      `/room?session_id=${sessionId}` + 
+      `&role=${encodeURIComponent(roleTitle)}` + 
+      `&difficulty=${difficulty}` +
+      `&jd=${encodeURIComponent(jobDescription)}` // New JD parameter
+    );
   };
 
   return (
@@ -41,34 +47,42 @@ export default function InterviewSetupPage() {
           </div>
           <CardTitle className="text-2xl font-bold text-slate-900">Configure Your Interview</CardTitle>
           <CardDescription className="text-slate-500 text-base">
-            Customize the AI persona and difficulty level.
+            Customize the AI persona, job scope, and difficulty.
           </CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-8">
           
-          {/* Role Selection */}
+          {/* 1. Custom Role Title Input */}
           <div className="space-y-3">
             <Label className="text-base font-medium flex items-center gap-2">
-              <Briefcase className="h-4 w-4" /> Target Role
+              <Pencil className="h-4 w-4" /> Target Role Title
             </Label>
-            <Select onValueChange={setRole}>
-              <SelectTrigger className="h-12 text-base">
-                <SelectValue placeholder="Select a position..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Data Analyst">Data Analyst</SelectItem>
-                <SelectItem value="ML Engineer">Machine Learning Engineer</SelectItem>
-                <SelectItem value="Cybersecurity Analyst">Cybersecurity Analyst</SelectItem>
-                <SelectItem value="Software Engineer">Software Engineer</SelectItem>
-              </SelectContent>
-            </Select>
+            <Input 
+              placeholder="e.g., Senior TypeScript Developer, Cloud Architect" 
+              className="h-12 text-base"
+              value={roleTitle}
+              onChange={(e) => setRoleTitle(e.target.value)}
+            />
+          </div>
+
+          {/* 2. Job Description Input (New Feature) */}
+          <div className="space-y-3">
+            <Label className="text-base font-medium flex items-center gap-2">
+              <Briefcase className="h-4 w-4" /> Custom Job Description / Scope
+            </Label>
+            <Textarea 
+              placeholder="Paste 3-4 key skills and responsibilities the job requires (e.g., Kubernetes, Python, ETL pipeline optimization, leadership)."
+              rows={4}
+              value={jobDescription}
+              onChange={(e) => setJobDescription(e.target.value)}
+            />
             <p className="text-xs text-slate-500 flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" /> The AI will adapt technical questions to this role.
+              <AlertCircle className="h-3 w-3" /> The AI will adapt its questions and expectations strictly based on this scope.
             </p>
           </div>
 
-          {/* Difficulty Selection (Visual only for now, can be passed to backend later) */}
+          {/* 3. Difficulty Selection (No change) */}
           <div className="space-y-3">
             <Label className="text-base font-medium flex items-center gap-2">
               <Activity className="h-4 w-4" /> Difficulty Level
@@ -95,7 +109,7 @@ export default function InterviewSetupPage() {
           <Button 
             size="xl" 
             onClick={start} 
-            disabled={!role || isStarting} 
+            disabled={!roleTitle || !jobDescription || isStarting} 
             className="w-full text-lg font-semibold shadow-lg shadow-blue-200/50"
           >
             {isStarting ? (

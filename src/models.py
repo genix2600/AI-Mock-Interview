@@ -23,7 +23,6 @@ class EvaluationRequest(BaseModel):
     full_transcript: str = Field(..., description="Concatenated string of the full Q&A conversation history.")
     audio_features: Optional[Dict[str, Any]] = None
     
-    # ADDED: To support cleaner evaluation logic
     difficulty: Optional[str] = "medium"
     job_description: Optional[str] = None
 
@@ -49,5 +48,9 @@ class EvaluationReport(BaseModel):
     detailed_feedback: str
     technical_strengths: List[str]
     technical_weaknesses: List[str]
+    
+    # NEW FIELDS ADDED HERE
+    improvement_plan: List[str] = Field(..., description="Step-by-step actionable plan.")
+    learning_resources: List[str] = Field(..., description="Suggested books or documentation.")
     
     final_verdict: str = "Pending"

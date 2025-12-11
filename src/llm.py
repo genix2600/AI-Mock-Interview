@@ -114,6 +114,9 @@ def get_final_evaluation_json(
             "detailed_feedback": "The interview was terminated too early. Please complete at least 2-3 questions next time.",
             "technical_strengths": ["N/A"],
             "technical_weaknesses": ["Session too short to evaluate"],
+            # ADDED DEFAULT EMPTY LISTS TO MATCH MODEL
+            "improvement_plan": ["Complete a full session to get a plan."],
+            "learning_resources": ["N/A"],
             "final_verdict": "Fail"
         }
 
@@ -123,7 +126,10 @@ def get_final_evaluation_json(
             "detailed_feedback": "AI Service Unavailable.", 
             "final_verdict": "Error",
             "technical_strengths": [],
-            "technical_weaknesses": []
+            "technical_weaknesses": [],
+            # ADDED DEFAULT EMPTY LISTS
+            "improvement_plan": [],
+            "learning_resources": []
         }
 
     # Format transcript
@@ -161,9 +167,20 @@ def get_final_evaluation_json(
         "technical_score": (integer 0-100),
         "clarity_score": (integer 0-100),
         "fluency_score": (integer 0-100),
-        "detailed_feedback": "A professional paragraph summarizing performance relative to the job description and difficulty level.",
+        "detailed_feedback": "A professional paragraph summarizing performance.",
         "technical_strengths": ["Specific Skill 1", "Specific Skill 2"],
         "technical_weaknesses": ["Specific Skill 1", "Specific Skill 2"],
+        
+        "improvement_plan": [
+            "Actionable Step 1 (e.g., 'Practice SQL Window Functions')", 
+            "Actionable Step 2",
+            "Actionable Step 3"
+        ],
+        "learning_resources": [
+            "Resource 1 (e.g., 'Book: Cracking the Coding Interview')",
+            "Resource 2 (e.g., 'Documentation: React Hooks')"
+        ],
+        
         "final_verdict": "Strong Hire" | "Hire" | "Weak Hire" | "No Hire"
     }}
     """
@@ -192,5 +209,7 @@ def get_final_evaluation_json(
             "detailed_feedback": "Failed to generate report.",
             "technical_strengths": [],
             "technical_weaknesses": [],
+            "improvement_plan": [],
+            "learning_resources": [],
             "final_verdict": "Error"
         }

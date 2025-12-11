@@ -1,13 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Bot, BrainCircuit, Mic, Code2, BarChart3 } from 'lucide-react';
-// Assuming '@/components/layout/header' is your basic Navbar
+import { ArrowRight, BrainCircuit, Mic, BarChart3 } from 'lucide-react'; // Removed 'Bot'
 import Header from '@/components/layout/header'; 
 
-// Helper Component for Feature Cards (taken from your second snippet)
+// --- Feature Card Component ---
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
   return (
     <Card className="border-none shadow-md hover:shadow-xl transition-all duration-300 bg-background">
@@ -36,7 +36,7 @@ export default function Home() {
       
       <main className="flex-1">
         
-        {/* 2. Hero Section (Taken from first snippet, improved) */}
+        {/* 2. Hero Section */}
         <section className="w-full py-20 md:py-32 lg:py-40 xl:py-48">
           <div className="container px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px] items-center">
@@ -45,10 +45,10 @@ export default function Home() {
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
                   
-                  {/* Gemini Badge (Taken from second snippet) */}
+                  {/* Gemini Badge */}
                   <div className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm text-blue-800 mb-2">
                     <span className="flex h-2 w-2 rounded-full bg-blue-600 mr-2 animate-pulse"></span>
-                    Powered by **Gemini 2.5 Flash**
+                    Powered by Gemini
                   </div>
                   
                   <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none font-headline">
@@ -63,7 +63,6 @@ export default function Home() {
                 {/* CTA Buttons */}
                 <div className="flex flex-col gap-2 min-[400px]:flex-row pt-4">
                   <Button asChild size="lg" className="h-14 px-8 text-lg shadow-lg shadow-primary/20 group">
-                    {/* Link path updated to /interview/setup */}
                     <Link href="/interview/setup"> 
                       Start Mock Interview
                       <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -75,13 +74,24 @@ export default function Home() {
                 </div>
               </div>
               
-              {/* Right Column: Visualizer */}
+              {/* Right Column: Visualizer (Replaced Bot Icon with Image Logo) */}
               <div className="hidden lg:block relative h-full">
                 <div className="relative flex items-center justify-center h-full">
                   {/* Subtle Background Glow */}
                   <div className="absolute inset-0 top-1/4 bg-primary/10 rounded-full blur-3xl opacity-75 animate-pulse-slow"></div>
-                  {/* Large Bot Icon */}
-                  <Bot className="relative w-4/5 h-auto text-primary/80 opacity-90" size={400} strokeWidth={0.5} />
+                  
+                  {/* START LOGO ICON REPLACEMENT */}
+                  {/* This renders the custom icon (e.g., logo_icon.png) */}
+                  <div className="relative w-4/5 h-auto flex justify-center">
+                    <Image 
+                      src="/Interview Ace.png" // ⬅️ Must match the file name in /public/
+                      alt="AI Interview Icon" 
+                      width={400} 
+                      height={400} 
+                      className="opacity-90 object-contain w-full h-auto"
+                      priority
+                    />
+                  </div>
                 </div>
               </div>
               
@@ -89,7 +99,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 3. Features Grid (Taken from second snippet, using first snippet's Card style) */}
+        {/* 3. Features Grid */}
         <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-secondary">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
@@ -125,7 +135,7 @@ export default function Home() {
       
       {/* 4. Footer */}
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t bg-background">
-        <p className="text-xs text-muted-foreground">&copy; 2025 Interview Ace. Built for Techfest IIT Bombay.</p>
+        <p className="text-xs text-muted-foreground">&copy; 2025 Interview Ace. Built for UpSkill India Challenge, Techfest IIT Bombay. Built by the Fantastic Four</p>
       </footer>
       
     </div>
