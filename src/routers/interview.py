@@ -58,8 +58,13 @@ async def generate_question(req: InterviewRequest):
     if not history and req.user_answer is None:
         db_manager.start_session(session_id, req.role, user_id=req.user_id)
         
-        # Pass empty history list to signal "Start Interview"
-        ai_question = llm.generate_contextual_question(req.role, history=[]) 
+        # Pass ALL parameters including new difficulty and JD
+        ai_question = llm.generate_contextual_question(
+            role=req.role, 
+            history=[],
+            difficulty=req.difficulty, # <-- New Param
+            job_description=req.job_description or "" # <-- New Param
+        ) 
         
         # Save the first question with empty answer (placeholder)
         db_manager.append_qa_pair(session_id, question=ai_question, answer="")
@@ -74,8 +79,13 @@ async def generate_question(req: InterviewRequest):
         # 2. Fetch updated history to give context to AI
         updated_history = db_manager.get_history(session_id)
         
-        # 3. Generate Next Question
-        ai_question = llm.generate_contextual_question(req.role, history=updated_history)
+        # 3. Generate Next Question with full context
+        ai_question = llm.generate_contextual_question(
+            role=req.role, 
+            history=updated_history,
+            difficulty=req.difficulty, # <-- New Param
+            job_description=req.job_description or "" # <-- New Param
+        )
         
         # 4. Save the new AI question (open loop)
         db_manager.append_qa_pair(session_id, question=ai_question, answer="")
@@ -102,14 +112,19 @@ async def evaluate_session(req: EvaluationRequest):
         db_manager = get_db_manager()
         
         # 1. Fetch the REAL history from the DB
-        # We ignore req.full_transcript from frontend to ensure security/accuracy
         history = db_manager.get_history(req.session_id)
         
         print(f"DEBUG: Evaluating Session {req.session_id} with {len(history)} turns.")
 
         # 2. Generate the report using the merged LLM module
-        # This function now contains the GUARDRAIL for short sessions
-        evaluation_data = llm.get_final_evaluation_json(req.role, history)
+        # Note: We are assuming EvaluationRequest (req) has been updated in models.py
+        # to include optional difficulty/job_description, or we default them here.
+        evaluation_data = llm.get_final_evaluation_json(
+            role=req.role, 
+            history=history,
+            difficulty=getattr(req, 'difficulty', 'Medium'), # Safe access if model isn't updated
+            job_description=getattr(req, 'job_description', '') # Safe access
+        )
         
         report = EvaluationReport(**evaluation_data) 
         

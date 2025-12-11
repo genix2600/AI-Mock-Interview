@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
@@ -18,13 +19,25 @@ except Exception as e:
     print(f"LLM Initialization Error: {e}")
     client = None
 
+# --- Helper: Clean JSON Markdown ---
+def clean_json_text(text: str) -> str:
+    """Removes markdown code blocks if the LLM adds them."""
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(\w+)?", "", cleaned)
+        cleaned = re.sub(r"```$", "", cleaned)
+    return cleaned.strip()
 
 # --- 2. Interviewer Logic (Question Generation) ---
 
-def generate_contextual_question(role: str, history: list[dict] = None) -> str:
+def generate_contextual_question(
+    role: str, 
+    history: list[dict] = None, 
+    difficulty: str = "Medium", 
+    job_description: str = ""
+) -> str:
     """
-    Generates the next interview question. 
-    Persona: Strict Senior Engineer. Digs deeper, avoids fluff.
+    Generates the next interview question based on Role, Difficulty, and JD.
     """
     if client is None:
         return "Error: AI Service Unavailable. Please check backend logs."
@@ -35,32 +48,38 @@ def generate_contextual_question(role: str, history: list[dict] = None) -> str:
         for turn in history:
             conversation_text += f"Interviewer: {turn.get('Q', '')}\nCandidate: {turn.get('A', '')}\n"
 
+    # Context String
+    jd_context = f"Focus strictly on these key skills/scope: {job_description}" if job_description else "Focus on core concepts for this role."
+    
     # Dynamic System Instruction
     if not history:
         # START PHASE
         system_instruction = (
-            f"You are a strict, no-nonsense Senior Technical Interviewer for a {role} position. "
-            "Start with a foundational but specific question to gauge the candidate's core understanding. "
-            "Do not greet (e.g., no 'Hello', no 'Let's start'). Go straight to the question. "
-            "Keep it under 2 sentences."
+            f"You are a strict technical interviewer for a {role} position. "
+            f"Difficulty Level: {difficulty}. "
+            f"{jd_context} "
+            "Start with a foundational question related to the job scope. "
+            "Do not greet. Go straight to the question. Keep it under 2 sentences."
         )
         user_prompt = "Start the interview."
     else:
         # FOLLOW-UP PHASE
         system_instruction = (
-            f"You are a strict Technical Interviewer for a {role} position. "
-            "Analyze the candidate's last answer in the history below. "
+            f"You are a technical interviewer for a {role} position. "
+            f"Current Difficulty: {difficulty}. "
+            f"{jd_context} "
+            "Analyze the candidate's last answer. "
             "Rules:\n"
-            "1. If the answer was vague or short, ask a follow-up to dig deeper (e.g., 'Why?', 'How would that scale?').\n"
-            "2. If the answer was wrong, briefly correct them and move to a different topic.\n"
-            "3. If the answer was good, move to a significantly harder concept.\n"
-            "Output: JUST the question. No 'Great answer' or 'Okay'."
+            "1. If the answer is vague, ask 'Why?' or 'How?'.\n"
+            "2. If the answer is wrong, correct them briefly and move on.\n"
+            "3. If the answer is good, increase the complexity based on the difficulty level.\n"
+            "Output: JUST the question."
         )
         user_prompt = f"INTERVIEW HISTORY:\n{conversation_text}\n\nGenerate the next question."
 
     try:
         response = client.models.generate_content(
-            model="gemini-2.0-flash", # Use 2.0 Flash for speed/reasoning balance
+            model="gemini-2.0-flash",
             contents=[user_prompt],
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
@@ -71,25 +90,28 @@ def generate_contextual_question(role: str, history: list[dict] = None) -> str:
         return response.text.strip()
     except Exception as e:
         print(f"Question Generation Error: {e}")
-        return "Could you elaborate on your experience with this tech stack?"
+        return "Could you elaborate on your experience with these skills?"
 
 
 # --- 3. Grader Logic (Evaluation) ---
 
-def get_final_evaluation_json(role: str, history: list[dict]) -> dict:
+def get_final_evaluation_json(
+    role: str, 
+    history: list[dict], 
+    difficulty: str = "Medium", 
+    job_description: str = ""
+) -> dict:
     """
-    Evaluates the entire session and returns a JSON report.
-    CRITICAL: Handles empty or short sessions strictly with automatic failure.
+    Evaluates the session based on Role, Difficulty, and custom JD.
     """
     
     # --- GUARDRAIL: IMMEDIATE FAIL FOR SHORT SESSIONS ---
-    # If the user answered fewer than 2 questions, automatic fail.
     if not history or len(history) < 2:
         return {
             "technical_score": 10,
             "clarity_score": 10,
             "fluency_score": 10,
-            "detailed_feedback": "The interview was terminated too early. No substantial answers were recorded to evaluate technical skills. Please complete at least 2-3 questions next time.",
+            "detailed_feedback": "The interview was terminated too early. Please complete at least 2-3 questions next time.",
             "technical_strengths": ["N/A"],
             "technical_weaknesses": ["Session too short to evaluate"],
             "final_verdict": "Fail"
@@ -109,11 +131,15 @@ def get_final_evaluation_json(role: str, history: list[dict]) -> dict:
     for idx, turn in enumerate(history):
         transcript += f"{idx+1}. Q: {turn.get('Q', '')}\n   A: {turn.get('A', '(No Answer provided)')}\n"
 
-    # --- STRONG EVALUATION PROMPT (Rubric Based) ---
+    jd_context = f"Candidate must demonstrate proficiency in: {job_description}" if job_description else ""
+
+    # --- STRONG EVALUATION PROMPT ---
     system_instruction = (
-        f"You are a 'Bar Raiser' Technical Recruiter hiring for a {role}. "
+        f"You are a 'Bar Raiser' Recruiter for a {role}. "
+        f"Difficulty Expected: {difficulty}. "
+        f"{jd_context} "
         "Evaluate the candidate based STRICTLY on the transcript provided. "
-        "Do not hallucinate competence. If an answer is missing or nonsense, score it 0."
+        "Do not hallucinate competence."
     )
 
     prompt = f"""
@@ -121,24 +147,23 @@ def get_final_evaluation_json(role: str, history: list[dict]) -> dict:
     {transcript}
 
     INSTRUCTIONS:
-    1. SCORING RUBRIC (0-100):
-       - 0-30: Nonsense, empty, or completely wrong answers.
-       - 31-60: Surface-level knowledge, major gaps, used buzzwords without understanding.
-       - 61-80: Solid answers, minor mistakes, good communication.
-       - 81-100: Expert depth, covers edge cases, trade-offs, and internals.
+    1. SCORING RUBRIC (0-100) based on {difficulty} level expectations:
+       - 0-30: Nonsense or completely wrong.
+       - 31-60: Surface-level knowledge, major gaps.
+       - 61-80: Solid answers, minor mistakes.
+       - 81-100: Expert depth, covers edge cases.
     
     2. RULES:
        - If answers are one-word or off-topic, Technical Score MUST be < 30.
-       - Be critical. High scores require depth (mentioning "Why" and "How").
     
     OUTPUT FORMAT (JSON ONLY):
     {{
         "technical_score": (integer 0-100),
         "clarity_score": (integer 0-100),
         "fluency_score": (integer 0-100),
-        "detailed_feedback": "A professional paragraph summarizing performance, focusing on the gap between current level and senior level.",
-        "technical_strengths": ["Specific Concept 1", "Specific Concept 2"],
-        "technical_weaknesses": ["Specific Concept 1", "Specific Concept 2"],
+        "detailed_feedback": "A professional paragraph summarizing performance relative to the job description and difficulty level.",
+        "technical_strengths": ["Specific Skill 1", "Specific Skill 2"],
+        "technical_weaknesses": ["Specific Skill 1", "Specific Skill 2"],
         "final_verdict": "Strong Hire" | "Hire" | "Weak Hire" | "No Hire"
     }}
     """
@@ -149,13 +174,13 @@ def get_final_evaluation_json(role: str, history: list[dict]) -> dict:
             contents=[prompt],
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
-                response_mime_type="application/json", # Forces JSON output
-                temperature=0.2 # Low temperature for strict grading
+                response_mime_type="application/json",
+                temperature=0.2
             )
         )
         
-        # Parse the JSON response
-        result = json.loads(response.text)
+        cleaned_text = clean_json_text(response.text)
+        result = json.loads(cleaned_text)
         return result
 
     except Exception as e:
@@ -164,7 +189,7 @@ def get_final_evaluation_json(role: str, history: list[dict]) -> dict:
             "technical_score": 0,
             "clarity_score": 0,
             "fluency_score": 0,
-            "detailed_feedback": "Failed to generate evaluation report due to an internal error.",
+            "detailed_feedback": "Failed to generate report.",
             "technical_strengths": [],
             "technical_weaknesses": [],
             "final_verdict": "Error"
