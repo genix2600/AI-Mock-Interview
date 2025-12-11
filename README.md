@@ -203,8 +203,14 @@ Your application will open in your browser, and the proxy configuration will aut
 
 ---
 
-© 2025 Fantastic Four. Built for UpSkill India Challenge.
+<br>
+<hr>
 
-
-![Logo](https://ibb.co/7dm5Gs3b)
-
+<p align="center">
+  <img src="logo.png" alt="Interview ACE Logo" width="150">
+  
+  <br>
+  <b>© 2025 Fantastic Four</b>
+  <br>
+  <i>Built for the UpSkill India Challenge, Techfest IIT Bombay 2025.</i>
+</p>
