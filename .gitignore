@@ -177,5 +177,7 @@ frontend/package-lock.json
 # 4. Firebase Service Account Credentials (CRITICAL SECURITY)
 firebase_creds.json
 
+
+node_modules
 # 5. Local Env File
 .env
