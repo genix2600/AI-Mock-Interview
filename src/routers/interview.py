@@ -1,8 +1,7 @@
 from fastapi import APIRouter, HTTPException
 import uuid
-import os
 from ..database import get_db_manager 
-from .. import stt_service, llm, evaluation
+from .. import stt_service, llm
 from ..models import (
     InterviewRequest, InterviewResponse, EvaluationRequest, EvaluationReport, 
     TranscriptionResponse, TranscriptionInput
@@ -13,14 +12,11 @@ router = APIRouter(
     tags=["Interview Core"]
 )
 
-TMP_DIR = "tmp/mock_interview"
-
 # --- Endpoint 1: Transcribe Audio (/interview/transcribe) ---
 @router.post("/transcribe", response_model=TranscriptionResponse)
 async def transcribe_audio(req: TranscriptionInput):
     """
-    Receives audio data URI, transcribes via Gemini multimodal API, 
-    and returns text + audio features.
+    Receives audio data URI, transcribes via Gemini multimodal API.
     """
     if not req.audio_data_uri:
         raise HTTPException(status_code=400, detail="Audio data URI is missing.")
@@ -49,7 +45,7 @@ async def transcribe_audio(req: TranscriptionInput):
         raise HTTPException(status_code=500, detail=f"Transcription processing error: {e}")
     
 
-# --- Endpoint 2: Generate Question (FUNCTIONAL) ---
+# --- Endpoint 2: Generate Question (/interview/generate_question) ---
 @router.post("/generate_question", response_model=InterviewResponse)
 async def generate_question(req: InterviewRequest):
     session_id = req.session_id if req.session_id else str(uuid.uuid4())
@@ -58,36 +54,38 @@ async def generate_question(req: InterviewRequest):
     history = db_manager.get_history(session_id)
     ai_question = None 
     
+    # CASE A: FIRST CALL (Start Session)
     if not history and req.user_answer is None:
-        # A. FIRST CALL: Start session
         db_manager.start_session(session_id, req.role, user_id=req.user_id)
-        # Call the functional routine
-        ai_question = llm.generate_contextual_question(role=req.role, context="START") 
+        
+        # Pass empty history list to signal "Start Interview"
+        ai_question = llm.generate_contextual_question(req.role, history=[]) 
+        
+        # Save the first question with empty answer (placeholder)
         db_manager.append_qa_pair(session_id, question=ai_question, answer="")
         
+    # CASE B: SUBSEQUENT CALL (User Answered)
     elif req.user_answer is not None:
-        # B. SUBSEQUENT CALL: Process answer, save, and generate follow-up
-        last_question = history[-1].get('Q', 'Initial Greeting') 
-        db_manager.append_qa_pair(session_id, last_question, req.user_answer)
+        # 1. Update the previous question with the user's answer
+        if history:
+            last_question = history[-1].get('Q', 'Initial Greeting') 
+            db_manager.append_qa_pair(session_id, last_question, req.user_answer)
         
-        # Generate follow-up question (Pass history for context)
-        full_context = "\n".join([f"Q: {qa['Q']} A: {qa['A']}" for qa in db_manager.get_history(session_id)])
+        # 2. Fetch updated history to give context to AI
+        updated_history = db_manager.get_history(session_id)
         
-        # Call the functional routine
-        ai_question = llm.generate_contextual_question(
-            role=req.role, 
-            context=full_context,
-            user_answer=req.user_answer
-        )
+        # 3. Generate Next Question
+        ai_question = llm.generate_contextual_question(req.role, history=updated_history)
         
+        # 4. Save the new AI question (open loop)
         db_manager.append_qa_pair(session_id, question=ai_question, answer="")
 
+    # CASE C: HISTORY EXISTS BUT NO ANSWER (Resume/Error)
     elif history:
-        # C. IF HISTORY EXISTS BUT NO NEW ANSWER: Return the last unanswered question
         ai_question = history[-1].get('Q', 'Error: Please provide an answer.')
 
     else:
-        raise HTTPException(status_code=400, detail="Invalid request state or missing session ID.")
+        raise HTTPException(status_code=400, detail="Invalid request state.")
         
     is_complete = "stop" in ai_question.lower()
 
@@ -97,24 +95,29 @@ async def generate_question(req: InterviewRequest):
         is_complete=is_complete
     )
 
-# Endpoint 3: Evaluate (/interview/evaluate)
+# --- Endpoint 3: Evaluate (/interview/evaluate) ---
 @router.post("/evaluate", response_model=EvaluationReport)
 async def evaluate_session(req: EvaluationRequest):
-    
     try:
-        # 1. Generate the structured report using the functional evaluation logic
-        # Replaces the dummy report instantiation
-        evaluation_data = evaluation.get_final_evaluation_json(
-            role=req.role,
-            full_transcript=req.full_transcript
-        )
+        db_manager = get_db_manager()
+        
+        # 1. Fetch the REAL history from the DB
+        # We ignore req.full_transcript from frontend to ensure security/accuracy
+        history = db_manager.get_history(req.session_id)
+        
+        print(f"DEBUG: Evaluating Session {req.session_id} with {len(history)} turns.")
+
+        # 2. Generate the report using the merged LLM module
+        # This function now contains the GUARDRAIL for short sessions
+        evaluation_data = llm.get_final_evaluation_json(req.role, history)
+        
         report = EvaluationReport(**evaluation_data) 
         
+        # 3. Save to Firebase
+        db_manager.save_final_report(req.session_id, report.model_dump())
+
+        return report
+
     except Exception as e:
+        print(f"Evaluation Error: {e}")
         raise HTTPException(status_code=500, detail=f"AI Evaluation processing failed: {e}")
-
-    # 2. DB_MANAGER to save the final report to Firebase
-    db_manager = get_db_manager()
-    db_manager.save_final_report(req.session_id, report.model_dump())
-
-    return report
