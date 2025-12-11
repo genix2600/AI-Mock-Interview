@@ -10,15 +10,6 @@ interface ScoreVisualizationProps {
 
 export default function ScoreVisualization({ report }: ScoreVisualizationProps) {
   
-  // Helper to determine color based on score (0-10)
-  const getScoreColor = (score: number) => {
-    if (score >= 8) return 'text-green-600';
-    if (score >= 5) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getProgressWidth = (score: number) => `${(score / 10) * 100}%`;
-
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
@@ -71,6 +62,7 @@ export default function ScoreVisualization({ report }: ScoreVisualizationProps) 
           </CardContent>
         </Card>
 
+        {/* Weaknesses */}
         <Card className="border-l-4 border-amber-500 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-amber-700">
@@ -120,7 +112,8 @@ function ScoreCard({ title, score, colorClass, description }: { title: string, s
           {title}
         </div>
         <div className="text-5xl font-extrabold text-slate-900 mb-1">
-          {score}<span className="text-2xl text-slate-400 font-medium">/10</span>
+          {/* UPDATED: Displays /100 instead of /10 */}
+          {score}<span className="text-2xl text-slate-400 font-medium">/100</span>
         </div>
         <div className="text-xs text-slate-400 mb-4">{description}</div>
         
@@ -128,7 +121,8 @@ function ScoreCard({ title, score, colorClass, description }: { title: string, s
         <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
           <div 
             className={`h-full ${colorClass}`} 
-            style={{ width: `${(score / 10) * 100}%` }}
+            // UPDATED: Width is now purely percentage based (0-100)
+            style={{ width: `${Math.min(score, 100)}%` }}
           />
         </div>
       </CardContent>
