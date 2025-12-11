@@ -17,24 +17,12 @@ def get_final_evaluation_json(role: str, full_transcript: str) -> Dict[str, Any]
     if client is None:
         raise ConnectionError("Gemini client is not initialized.")
         
-    prompt = f"""You are an expert interview evaluator and career coach. Your task is to provide a comprehensive evaluation of a candidate's answer during a mock interview.
-
-**CONTEXT:**
-- **Key points the candidate should have mentioned:**
-{{#each expected_points}}
-{{/each}}
-- **TRANSCRIPT: ---{full_transcript}---
-
-**EVALUATION INSTRUCTIONS:**
-1.  **Score Rubrics:** Based on the transcript, provide a score from 0 to 100 for each of the following rubrics: 'technical_correctness', 'problem_solving', and 'communication'.
-2.  **Explainable Feedback:** For each rubric, you MUST provide:
-    *   **Comments:** Constructive feedback explaining the score.
-    *   **Evidence:** Quote one or two short, specific phrases from the transcript that justify your comments. If there is no direct evidence, leave the array empty.
-3.  **Learning Plan:** Based on the candidate's performance, create a concise, actionable 'learning_plan'.
-    *   **improvement_points:** Provide 2-3 specific, actionable bullet points for how the candidate can improve.
-    *   **learning_resources_keywords:** Suggest 2-3 search keywords or phrases the candidate can use to find relevant learning materials (e.g., "React custom hooks", "CSS Flexbox layout").
-
-   
+    prompt = f"""You are an impartial Senior Technical Interview Evaluator for the '{role}' role.
+    Analyze the entire conversation transcript below and generate a STRICT JSON evaluation report.
+    
+    SCORING CRITERIA (0-10): Technical correctness, communication clarity, and fluency.
+    
+    TRANSCRIPT: ---{full_transcript}---
     
     You MUST respond ONLY with a single JSON object that adheres exactly to the required EvaluationReport schema.
     """
