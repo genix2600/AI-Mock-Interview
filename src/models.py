@@ -4,7 +4,7 @@ from typing import Optional, Dict, Any, List
 class InterviewRequest(BaseModel):
     """Input for generating the next question."""
     session_id: str = Field(..., description="Unique ID for tracking the interview session.")
-    user_id: str = Field("guest", description="ID of the user, used for database indexing.") # Added for Firebase
+    user_id: str = Field("guest", description="ID of the user, used for database indexing.") 
     role: str = Field(..., description="The job role being interviewed for (e.g., 'Data Analyst').")
     user_answer: Optional[str] = Field(None, description="The user's last transcribed answer text.")
     difficulty: Optional[str] = "medium" 
@@ -25,8 +25,8 @@ class TranscriptionResponse(BaseModel):
     """Output after transcribing user audio via Gemini Multimodal STT."""
     session_id: str
     transcript: str
-    duration_sec: float = Field(..., description="Estimated duration of the audio in seconds.") # NEW
-    audio_features: Dict[str, float] = Field(..., description="Structured analysis features (WPM, filler rate).") # NEW
+    duration_sec: float = Field(..., description="Estimated duration of the audio in seconds.") 
+    audio_features: Dict[str, float] = Field(..., description="Structured analysis features (WPM, filler rate).") 
 
 class InterviewResponse(BaseModel):
     """Output containing the AI's question."""
@@ -35,10 +35,13 @@ class InterviewResponse(BaseModel):
     is_complete: bool = False
 
 class EvaluationReport(BaseModel):
-    """The structured output model for the LLM evaluation (0.0 to 10.0 scores)."""
-    technical_score: float = Field(..., ge=0, le=10)
-    clarity_score: float = Field(..., ge=0, le=10)
-    fluency_score: float = Field(..., ge=0, le=10)
+    """The structured output model for the LLM evaluation (0-100 scores)."""
+    technical_score: int = Field(..., ge=0, le=100)
+    clarity_score: int = Field(..., ge=0, le=100)
+    fluency_score: int = Field(..., ge=0, le=100)
+    
     detailed_feedback: str
     technical_strengths: List[str]
     technical_weaknesses: List[str]
+    
+    final_verdict: str = "Pending"
