@@ -12,7 +12,6 @@ router = APIRouter(
     tags=["Interview Core"]
 )
 
-# --- Endpoint 1: Transcribe Audio (/interview/transcribe) ---
 @router.post("/transcribe", response_model=TranscriptionResponse)
 async def transcribe_audio(req: TranscriptionInput):
     """
@@ -62,8 +61,8 @@ async def generate_question(req: InterviewRequest):
         ai_question = llm.generate_contextual_question(
             role=req.role, 
             history=[],
-            difficulty=req.difficulty, # <-- New Param
-            job_description=req.job_description or "" # <-- New Param
+            difficulty=req.difficulty, 
+            job_description=req.job_description or "" 
         ) 
         
         # Save the first question with empty answer (placeholder)
@@ -83,8 +82,8 @@ async def generate_question(req: InterviewRequest):
         ai_question = llm.generate_contextual_question(
             role=req.role, 
             history=updated_history,
-            difficulty=req.difficulty, # <-- New Param
-            job_description=req.job_description or "" # <-- New Param
+            difficulty=req.difficulty, 
+            job_description=req.job_description or "" 
         )
         
         # 4. Save the new AI question (open loop)
@@ -117,18 +116,16 @@ async def evaluate_session(req: EvaluationRequest):
         print(f"DEBUG: Evaluating Session {req.session_id} with {len(history)} turns.")
 
         # 2. Generate the report using the merged LLM module
-        # Note: We are assuming EvaluationRequest (req) has been updated in models.py
-        # to include optional difficulty/job_description, or we default them here.
+        # Updated to use direct attributes from the updated EvaluationRequest model
         evaluation_data = llm.get_final_evaluation_json(
             role=req.role, 
             history=history,
-            difficulty=getattr(req, 'difficulty', 'Medium'), # Safe access if model isn't updated
-            job_description=getattr(req, 'job_description', '') # Safe access
+            difficulty=req.difficulty, 
+            job_description=req.job_description or ""
         )
         
         report = EvaluationReport(**evaluation_data) 
         
-        # 3. Save to Firebase
         db_manager.save_final_report(req.session_id, report.model_dump())
 
         return report

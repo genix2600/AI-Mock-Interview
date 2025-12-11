@@ -7,7 +7,9 @@ class InterviewRequest(BaseModel):
     user_id: str = Field("guest", description="ID of the user, used for database indexing.") 
     role: str = Field(..., description="The job role being interviewed for (e.g., 'Data Analyst').")
     user_answer: Optional[str] = Field(None, description="The user's last transcribed answer text.")
-    difficulty: Optional[str] = "medium" 
+    difficulty: Optional[str] = "medium"
+    
+    job_description: Optional[str] = Field(None, description="Optional job description text.")
 
 class TranscriptionInput(BaseModel):
     """Input containing the Base64 audio URI for the multimodal STT service."""
@@ -20,6 +22,10 @@ class EvaluationRequest(BaseModel):
     role: str
     full_transcript: str = Field(..., description="Concatenated string of the full Q&A conversation history.")
     audio_features: Optional[Dict[str, Any]] = None
+    
+    # ADDED: To support cleaner evaluation logic
+    difficulty: Optional[str] = "medium"
+    job_description: Optional[str] = None
 
 class TranscriptionResponse(BaseModel):
     """Output after transcribing user audio via Gemini Multimodal STT."""
